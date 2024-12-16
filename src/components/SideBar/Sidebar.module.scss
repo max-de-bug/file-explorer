@@ -1,0 +1,38 @@
+@import "../../variables.scss"; // Fixed import statement
+
+.nav {
+  @include flex(column);
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.label {
+  color: black; // Set the label color to black
+}
+
+.sidebarContainer {
+  border-radius: 5px;
+  width: 200px;
+  padding: 20px;
+  height: 100%;
+  background-color: $bg-primary;
+}
+
+.menuItem {
+  @include flex(row, flex-start, center);
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 6px;
+  color: $text-secondary;
+  text-decoration: none;
+  @include hover-effect;
+
+  &:hover {
+    color: $text-primary;
+  }
+
+  &.active {
+    background: $accent-color;
+    color: $text-primary;
+  }
+}
