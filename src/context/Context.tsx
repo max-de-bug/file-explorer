@@ -3,37 +3,46 @@ import { createContext, useState, ReactNode, useEffect } from "react";
 
 // Define the context's type
 interface AppContextType {
-  disks: string[]; // disks will be an array of strings
-  fetchDisks: () => void; // fetchDisks is a function
+  disks: string[];
+  fetchDisks: () => void;
+  dowloads: string[];
+  fetchDowloads: () => void;
 }
 
-// Create the context with a default value that matches AppContextType
 export const AppContext = createContext<AppContextType>({
-  disks: [], // Default value for disks as an empty array
-  fetchDisks: () => {}, // Default value for fetchDisks as an empty function
+  disks: [],
+  fetchDisks: () => {},
+  dowloads: [],
+  fetchDowloads: () => {},
 });
 
 // Create a Provider component that will wrap around your app
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [disks, setDisks] = useState<string[]>([]); // State for disks (array of strings)
-
-  // Function to fetch disks from the backend using Tauri
+  const [disks, setDisks] = useState<string[]>([]);
+  const [dowloads, setDowloads] = useState<string[]>([]);
   async function fetchDisks() {
     try {
-      const result = await invoke<string[]>("list_disks"); // Call the Tauri API
-      setDisks(result || []); // Set disks state to the result or an empty array if there's no result
+      const result = await invoke<string[]>("list_disks");
+      setDisks(result || []);
     } catch (error) {
-      console.error("Error fetching disks:", error); // Handle errors if any
+      console.error("Error fetching disks:", error);
     }
   }
-
-  // useEffect ensures fetchDisks is only called once on component mount
+  async function fetchDowloads() {
+    try {
+      const result = await invoke<string[]>("list_dowloads");
+      setDowloads(result || []);
+    } catch (error) {
+      console.error("Error fetching disks:", error);
+    }
+  }
   useEffect(() => {
     fetchDisks();
-  }, []); // Empty dependency array means it only runs once when the component mounts
+    fetchDowloads();
+  }, []);
 
   return (
-    <AppContext.Provider value={{ disks, fetchDisks }}>
+    <AppContext.Provider value={{ disks, fetchDisks, dowloads, fetchDowloads }}>
       {children}
     </AppContext.Provider>
   );

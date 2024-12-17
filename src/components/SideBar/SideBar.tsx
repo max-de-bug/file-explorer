@@ -8,10 +8,11 @@ import {
   HardDrive,
 } from "lucide-react";
 import styles from "./Sidebar.module.scss";
+import { useNavigate } from "react-router-dom";
 
 const menuItems = [
   { icon: Home, label: "Home", path: "/" },
-  { icon: Download, label: "Downloads", path: "/Downloads" },
+  { icon: Download, label: "Downloads", path: "/Dashboard/Downloads" }, // Updated path
   { icon: File, label: "Documents", path: "/Documents" },
   { icon: Image, label: "Pictures", path: "/Pictures" },
   { icon: Video, label: "Videos", path: "/Videos" },
@@ -19,11 +20,9 @@ const menuItems = [
   { icon: HardDrive, label: "Disks", path: "/" },
 ];
 
-interface SidebarProps {
-  onNavigate: (path: string) => void;
-}
+export function Sidebar() {
+  const navigate = useNavigate();
 
-export function Sidebar({ onNavigate }: SidebarProps) {
   return (
     <div className={styles.sidebarContainer}>
       <nav className={styles.nav}>
@@ -31,7 +30,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
           <button
             key={item.path}
             className={styles.menuItem}
-            onClick={() => onNavigate(item.path)}
+            onClick={() => navigate(item.path)} // Use navigate directly
           >
             <item.icon size={18} />
             <span className={styles.label}>{item.label}</span>
