@@ -5,7 +5,7 @@ import DiskList from "./components/Dashboard/DiskList";
 import Navbar from "./components/NavBar/NavBar";
 import { Sidebar } from "./components/SideBar/SideBar";
 import { AppProvider } from "./context/Context";
-import Dowloads from "./components/Dashboard/Dowloads";
+import Downloads from "./components/Dashboard/Downloads";
 
 function App() {
   return (
@@ -17,7 +17,7 @@ function App() {
           <div className={styles.dashboard}>
             <Routes>
               <Route path="/" element={<DiskList />} />
-              <Route path="/Dashboard/Downloads" element={<Dowloads />} />{" "}
+              <Route path="/Dashboard/Downloads" element={<Downloads />} />{" "}
               {/* Updated path */}
             </Routes>
           </div>

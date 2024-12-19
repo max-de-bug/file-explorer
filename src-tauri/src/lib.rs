@@ -21,42 +21,36 @@ fn list_disks() -> Vec<String> {
 #[command]
 fn list_downloads() -> Result<Vec<String>, String> {
     // Get the user's home directory
-    let home_dir = match home_dir() {
-        Some(path) => path,
-        None => return Err("Could not determine home directory".to_string()),
-    };
+    let home_dir = home_dir().ok_or_else(|| "Could not determine home directory".to_string())?;
 
+    // Construct the Downloads folder path
     let downloads_dir = home_dir.join("Downloads");
 
     // Check if the Downloads folder exists and is a directory
-    if !downloads_dir.exists() || !downloads_dir.is_dir() {
-        return Err("Downloads folder not found".to_string());
+    if !downloads_dir.exists() {
+        return Err(format!("Downloads folder not found: {:?}", downloads_dir));
+    }
+    if !downloads_dir.is_dir() {
+        return Err(format!("Path is not a directory: {:?}", downloads_dir));
     }
 
     // Read the contents of the Downloads directory
-    let entries = match fs::read_dir(downloads_dir) {
-        Ok(entries) => entries,
-        Err(_) => return Err("Failed to read the Downloads folder".to_string()),
-    };
+    let entries = fs::read_dir(downloads_dir).map_err(|e| {
+        format!("Failed to read the Downloads folder: {:?}", e)
+    })?;
 
     let mut file_names = Vec::new();
-    
+
     // Iterate over the directory entries and collect file names
     for entry in entries {
-        match entry {
-            Ok(entry) => {
-                let file_name = entry.file_name().to_string_lossy().into_owned();
-                file_names.push(file_name);
-            }
-            Err(_) => {
-                return Err("Error reading some files in the Downloads folder".to_string());
-            }
+        if let Ok(entry) = entry {
+            let file_name = entry.file_name().to_string_lossy().into_owned();
+            file_names.push(file_name);
         }
     }
 
     Ok(file_names)
 }
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()

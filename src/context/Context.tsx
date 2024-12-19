@@ -5,21 +5,21 @@ import { createContext, useState, ReactNode, useEffect } from "react";
 interface AppContextType {
   disks: string[];
   fetchDisks: () => void;
-  dowloads: string[];
-  fetchDowloads: () => void;
+  downloads: string[];
+  fetchDownloads: () => void;
 }
 
 export const AppContext = createContext<AppContextType>({
   disks: [],
   fetchDisks: () => {},
-  dowloads: [],
-  fetchDowloads: () => {},
+  downloads: [],
+  fetchDownloads: () => {},
 });
 
 // Create a Provider component that will wrap around your app
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [disks, setDisks] = useState<string[]>([]);
-  const [dowloads, setDowloads] = useState<string[]>([]);
+  const [downloads, setDowloads] = useState<string[]>([]);
   async function fetchDisks() {
     try {
       const result = await invoke<string[]>("list_disks");
@@ -28,9 +28,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       console.error("Error fetching disks:", error);
     }
   }
-  async function fetchDowloads() {
+  async function fetchDownloads() {
     try {
-      const result = await invoke<string[]>("list_dowloads");
+      const result = await invoke<string[]>("list_downloads");
       setDowloads(result || []);
     } catch (error) {
       console.error("Error fetching disks:", error);
@@ -38,11 +38,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }
   useEffect(() => {
     fetchDisks();
-    fetchDowloads();
+    fetchDownloads();
   }, []);
 
   return (
-    <AppContext.Provider value={{ disks, fetchDisks, dowloads, fetchDowloads }}>
+    <AppContext.Provider
+      value={{ disks, fetchDisks, downloads, fetchDownloads }}
+    >
       {children}
     </AppContext.Provider>
   );

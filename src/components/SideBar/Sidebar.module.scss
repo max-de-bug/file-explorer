@@ -1,4 +1,4 @@
-@import "../../variables.scss"; // Fixed import statement
+@import "../../variables.scss";
 
 .nav {
   @include flex(column);
@@ -7,15 +7,20 @@
 }
 
 .label {
-  color: black; // Set the label color to black
+  color: black;
 }
 
 .sidebarContainer {
   border-radius: 5px;
-  width: 200px;
+  width: 250px;
   padding: 20px;
   height: 100%;
   background-color: $bg-primary;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  box-sizing: border-box;
 }
 
 .menuItem {
@@ -25,6 +30,11 @@
   border-radius: 6px;
   color: $text-secondary;
   text-decoration: none;
+  width: 100%;
+  box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   @include hover-effect;
 
   &:hover {
