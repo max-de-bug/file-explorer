@@ -2,10 +2,16 @@ import { invoke } from "@tauri-apps/api/core";
 import { createContext, useState, ReactNode, useEffect } from "react";
 
 // Define the context's type
+
+type File = {
+  name: string;
+  date: string;
+  size: string;
+};
 interface AppContextType {
   disks: string[];
   fetchDisks: () => void;
-  downloads: string[];
+  downloads: File[] | null;
   fetchDownloads: () => void;
 }
 
@@ -19,7 +25,7 @@ export const AppContext = createContext<AppContextType>({
 // Create a Provider component that will wrap around your app
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [disks, setDisks] = useState<string[]>([]);
-  const [downloads, setDowloads] = useState<string[]>([]);
+  const [downloads, setDownloads] = useState<File[] | null>(null);
   async function fetchDisks() {
     try {
       const result = await invoke<string[]>("list_disks");
@@ -30,10 +36,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }
   async function fetchDownloads() {
     try {
-      const result = await invoke<string[]>("list_downloads");
-      setDowloads(result || []);
+      // Assuming `list_downloads` now returns File[] from the Tauri backend
+      const result = await invoke<File[]>("list_downloads");
+      setDownloads(result || null); // Update state with File[] or null
     } catch (error) {
-      console.error("Error fetching disks:", error);
+      console.error("Error fetching downloads:", error);
     }
   }
   useEffect(() => {

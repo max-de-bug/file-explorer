@@ -1,9 +1,8 @@
-use std::fs;
+use std::{fs, time::UNIX_EPOCH};
+use chrono::{DateTime, Utc};
 use tauri::command;
 use dirs_next::home_dir;
 use sysinfo::Disks;
-
-// Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 
 // List all disks on the system
 #[tauri::command]
@@ -19,7 +18,7 @@ fn list_disks() -> Vec<String> {
 
 // List files in the user's Downloads folder
 #[command]
-fn list_downloads() -> Result<Vec<String>, String> {
+fn list_downloads() -> Result<Vec<(String, String, u64)>, String> {
     // Get the user's home directory
     let home_dir = home_dir().ok_or_else(|| "Could not determine home directory".to_string())?;
 
@@ -35,22 +34,42 @@ fn list_downloads() -> Result<Vec<String>, String> {
     }
 
     // Read the contents of the Downloads directory
-    let entries = fs::read_dir(downloads_dir).map_err(|e| {
+    let entries = fs::read_dir(&downloads_dir).map_err(|e| {
         format!("Failed to read the Downloads folder: {:?}", e)
     })?;
 
-    let mut file_names = Vec::new();
+    let mut files_info = Vec::new();
 
-    // Iterate over the directory entries and collect file names
+    // Iterate over the directory entries and collect file info
     for entry in entries {
         if let Ok(entry) = entry {
             let file_name = entry.file_name().to_string_lossy().into_owned();
-            file_names.push(file_name);
+
+            if let Ok(metadata) = entry.metadata() {
+                // Get the file size
+                let file_size = metadata.len();
+
+                // Get the last modification time
+                let modification_time = metadata.modified().ok();
+                let modification_date = modification_time
+                    .and_then(|time| time.duration_since(UNIX_EPOCH).ok())
+                    .map_or_else(
+                        || "Unknown".to_string(), // Default to "Unknown" if None
+                        |duration| {
+                            let utc_datetime = DateTime::<Utc>::from_timestamp(duration.as_secs() as i64, 0);
+                            utc_datetime.expect("REASON").to_rfc3339() // Format the DateTime as RFC3339
+                        }
+                    );
+
+                // Add the file info to the result
+                files_info.push((file_name, modification_date, file_size));
+            }
         }
     }
 
-    Ok(file_names)
+    Ok(files_info)
 }
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
