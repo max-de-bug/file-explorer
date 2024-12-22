@@ -1,0 +1,31 @@
+.container {
+  padding: 20px;
+}
+
+.header {
+  font-size: 2rem;
+  margin-bottom: 10px;
+  color: #f5f5f5;
+}
+
+.list {
+  list-style-type: none;
+  padding: 0;
+}
+
+.listItem {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.fileName {
+  font-weight: bold;
+  color: #f5f5f5;
+}
+
+.fileDate,
+.fileSize {
+  font-size: 0.9rem;
+  color: gray;
+}

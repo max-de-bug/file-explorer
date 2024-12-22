@@ -4,6 +4,14 @@ use tauri::command;
 use dirs_next::home_dir;
 use sysinfo::Disks;
 
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug)]  // Deriving Debug here
+
+pub struct FileInfo {
+    pub file_name: String,
+    pub file_size: u64,
+    pub modification_date: String,
+}
 // List all disks on the system
 #[tauri::command]
 fn list_disks() -> Vec<String> {
@@ -17,8 +25,9 @@ fn list_disks() -> Vec<String> {
 }
 
 // List files in the user's Downloads folder
+
 #[command]
-fn list_downloads() -> Result<Vec<(String, String, u64)>, String> {
+fn list_downloads() -> Result<Vec<FileInfo>, String> {
     // Get the user's home directory
     let home_dir = home_dir().ok_or_else(|| "Could not determine home directory".to_string())?;
 
@@ -39,6 +48,61 @@ fn list_downloads() -> Result<Vec<(String, String, u64)>, String> {
     })?;
 
     let mut files_info = Vec::new();
+    // Iterate over the directory entries and collect file info
+    for entry in entries {
+        if let Ok(entry) = entry {
+            let file_name = entry.file_name().to_string_lossy().into_owned();
+            
+            if let Ok(metadata) = entry.metadata() {
+                // Get the file size
+                let file_size = metadata.len();
+                
+                // Get the last modification time
+                let modification_time = metadata.modified().ok();
+                let modification_date = modification_time
+                    .and_then(|time| time.duration_since(UNIX_EPOCH).ok())
+                    .map_or_else(
+                        || "Unknown".to_string(), // Default to "Unknown" if None
+                        |duration| {
+                            let utc_datetime = DateTime::<Utc>::from_timestamp(duration.as_secs() as i64, 0);
+                            utc_datetime.expect("Reason").to_rfc3339() // Format the DateTime as RFC3339
+                        }
+                    );
+
+                // Add the file info to the result
+                files_info.push(FileInfo {
+                    file_name,
+                    file_size,
+                    modification_date,
+                });
+            }
+        }
+    }
+
+    Ok(files_info)
+}
+#[command]
+fn list_documents() -> Result<Vec<FileInfo>, String> {
+    // Get the user's home directory
+    let home_dir = home_dir().ok_or_else(|| "Could not determine home directory".to_string())?;
+
+    // Construct the Documents folder path
+    let documents_dir = home_dir.join("Documents");
+
+    // Check if the Documents folder exists and is a directory
+    if !documents_dir.exists() {
+        return Err(format!("Documents folder not found: {:?}", documents_dir));
+    }
+    if !documents_dir.is_dir() {
+        return Err(format!("Path is not a directory: {:?}", documents_dir));
+    }
+
+    // Read the contents of the Documents directory
+    let entries = fs::read_dir(&documents_dir).map_err(|e| {
+        format!("Failed to read the Documents folder: {:?}", e)
+    })?;
+
+    let mut files_info = Vec::new();
 
     // Iterate over the directory entries and collect file info
     for entry in entries {
@@ -49,20 +113,13 @@ fn list_downloads() -> Result<Vec<(String, String, u64)>, String> {
                 // Get the file size
                 let file_size = metadata.len();
 
-                // Get the last modification time
-                let modification_time = metadata.modified().ok();
-                let modification_date = modification_time
-                    .and_then(|time| time.duration_since(UNIX_EPOCH).ok())
-                    .map_or_else(
-                        || "Unknown".to_string(), // Default to "Unknown" if None
-                        |duration| {
-                            let utc_datetime = DateTime::<Utc>::from_timestamp(duration.as_secs() as i64, 0);
-                            utc_datetime.expect("REASON").to_rfc3339() // Format the DateTime as RFC3339
-                        }
-                    );
-
                 // Add the file info to the result
-                files_info.push((file_name, modification_date, file_size));
+                files_info.push(FileInfo {
+                    file_name,
+                    file_size,
+                    modification_date: "Unknown".to_string(), // Assuming we don't need mod date for documents
+                });
+                println!("{:?}", files_info);
             }
         }
     }
@@ -70,11 +127,12 @@ fn list_downloads() -> Result<Vec<(String, String, u64)>, String> {
     Ok(files_info)
 }
 
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .invoke_handler(tauri::generate_handler![list_disks, list_downloads]) // Add list_downloads here
+        .invoke_handler(tauri::generate_handler![list_disks, list_downloads, list_documents]) // Add list_downloads here
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
