@@ -83,11 +83,8 @@ fn list_downloads() -> Result<Vec<FileInfo>, String> {
 }
 #[command]
 fn list_documents() -> Result<Vec<FileInfo>, String> {
-    // Get the user's home directory
-    let home_dir = home_dir().ok_or_else(|| "Could not determine home directory".to_string())?;
-
-    // Construct the Documents folder path
-    let documents_dir = home_dir.join("Documents");
+    // Get the Documents folder path using the dirs crate
+    let documents_dir = dirs::document_dir().ok_or_else(|| "Could not determine Documents directory".to_string())?;
 
     // Check if the Documents folder exists and is a directory
     if !documents_dir.exists() {
@@ -110,16 +107,25 @@ fn list_documents() -> Result<Vec<FileInfo>, String> {
             let file_name = entry.file_name().to_string_lossy().into_owned();
 
             if let Ok(metadata) = entry.metadata() {
-                // Get the file size
                 let file_size = metadata.len();
+
+                // Get the modification date
+                let modification_date = match metadata.modified() {
+                    Ok(time) => {
+                        let duration_since_epoch = time.duration_since(UNIX_EPOCH).unwrap_or_default();
+                        let datetime = chrono::NaiveDateTime::from_timestamp_opt(duration_since_epoch.as_secs() as i64, 0);
+                        datetime.map_or("Unknown".to_string(), |dt| dt.to_string())
+                    }
+                    Err(_) => "Unknown".to_string(),
+                };
 
                 // Add the file info to the result
                 files_info.push(FileInfo {
                     file_name,
                     file_size,
-                    modification_date: "Unknown".to_string(), // Assuming we don't need mod date for documents
+                    modification_date,
                 });
-                println!("{:?}", files_info);
+                println!("{:?}", files_info)
             }
         }
     }

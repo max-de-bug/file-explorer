@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom";
 const menuItems = [
   { icon: Home, label: "Home", path: "/" },
   { icon: Download, label: "Downloads", path: "/Dashboard/Downloads" }, // Updated path
-  { icon: File, label: "Documents", path: "/Documents" },
+  { icon: File, label: "Documents", path: "/Dashboard/Documents" },
   { icon: Image, label: "Pictures", path: "/Pictures" },
   { icon: Video, label: "Videos", path: "/Videos" },
   { icon: Music, label: "Music", path: "/Music" },
