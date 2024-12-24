@@ -1,0 +1,14 @@
+.container {
+  padding: 10px;
+  font-family: "Arial", sans-serif;
+  color: #333;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #333;
+}
+
+.searchInput:focus {
+  outline: none;
+}

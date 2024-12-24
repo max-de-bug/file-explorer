@@ -1,5 +1,11 @@
-import { invoke } from "@tauri-apps/api/core";
-import { createContext, useState, ReactNode, useEffect } from "react";
+import { invoke } from "./../../node_modules/@tauri-apps/api/core";
+import {
+  createContext,
+  useState,
+  useEffect,
+  ReactNode,
+  ChangeEvent,
+} from "react";
 
 // Define the FileInfo type
 interface FileInfo {
@@ -8,65 +14,110 @@ interface FileInfo {
   modification_date: string;
 }
 
-// Define the context's type
+// Define the AppContext type
 interface AppContextType {
   disks: string[];
-  fetchDisks: () => void;
-  downloads: FileInfo[]; // Use FileInfo[] to type the downloads
-  fetchDownloads: () => void;
-  documents: FileInfo[]; // Use FileInfo[] here as well
-  fetchDocuments: () => void;
+  files: number[];
+  fetchDisks: () => Promise<void>;
+  downloads: FileInfo[];
+  fetchDownloads: () => Promise<void>;
+  documents: FileInfo[];
+  fetchDocuments: () => Promise<void>;
+  handleBack: () => void;
+  handleHome: () => void;
+  fileCounter: () => Promise<void>;
+  searchValue: string;
+  handleSearch: (event: ChangeEvent<HTMLInputElement>) => void;
 }
 
+// Create the AppContext
 export const AppContext = createContext<AppContextType>({
   disks: [],
-  fetchDisks: () => {},
+  files: [],
+  fileCounter: async () => {},
+  fetchDisks: async () => {},
   downloads: [],
-  fetchDownloads: () => {},
+  fetchDownloads: async () => {},
   documents: [],
-  fetchDocuments: () => {},
+  fetchDocuments: async () => {},
+  handleBack: () => {},
+  handleHome: () => {},
+  searchValue: "",
+  handleSearch: () => {},
 });
 
-// Create a Provider component that will wrap around your app
+// Create the Provider component
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [disks, setDisks] = useState<string[]>([]); // Correct type for disks
-  const [downloads, setDownloads] = useState<FileInfo[]>([]); // Correct type for downloads
-  const [documents, setDocuments] = useState<FileInfo[]>([]); // Correct type for documents
+  const [disks, setDisks] = useState<string[]>([]);
+  const [downloads, setDownloads] = useState<FileInfo[]>([]);
+  const [documents, setDocuments] = useState<FileInfo[]>([]);
+  const [searchValue, setSearchValue] = useState<string>("");
+  const [files, setFiles] = useState<number[]>([0]);
 
-  async function fetchDisks() {
+  // Fetch disks from the backend
+  const fetchDisks = async () => {
     try {
       const result = await invoke<string[]>("list_disks");
-      setDisks(result || []); // Correctly set the disks state
+      setDisks(result || []);
     } catch (error) {
       console.error("Error fetching disks:", error);
     }
-  }
+  };
 
-  async function fetchDownloads() {
+  // Fetch downloads from the backend
+  const fetchDownloads = async () => {
     try {
-      // Assuming `list_downloads` now returns an array of FileInfo from the backend
       const result = await invoke<FileInfo[]>("list_downloads");
-      setDownloads(result || []); // Correctly set the downloads state
-      console.log("result", result);
+      setDownloads(result || []);
+      console.log("Downloads fetched:", result);
     } catch (error) {
       console.error("Error fetching downloads:", error);
     }
-  }
+  };
 
-  async function fetchDocuments() {
+  // Fetch documents from the backend
+  const fetchDocuments = async () => {
     try {
-      // Assuming `list_documents` now returns an array of FileInfo from the backend
       const result = await invoke<FileInfo[]>("list_documents");
-      setDocuments(result || []); // Correctly set the documents state
+      setDocuments(result || []);
     } catch (error) {
       console.error("Error fetching documents:", error);
     }
-  }
+  };
 
+  // Navigation logic
+  const handleBack = () => {
+    console.log("Navigate to the previous directory");
+    // Add navigation logic here
+  };
+
+  const handleHome = () => {
+    console.log("Navigate to the home directory");
+    // Add navigation logic here
+  };
+
+  // Handle search input
+  const handleSearch = (event: ChangeEvent<HTMLInputElement>) => {
+    setSearchValue(event.target.value);
+    console.log("Search Value:", event.target.value);
+  };
+
+  // File counter function
+  const fileCounter = async () => {
+    try {
+      const updatedFiles = [1]; // Example logic to update files
+      setFiles(updatedFiles);
+      console.log("Files updated:", updatedFiles);
+    } catch (error) {
+      console.error("Error in fileCounter:", error);
+    }
+  };
+
+  // Fetch initial data on mount
   useEffect(() => {
     fetchDisks();
     fetchDownloads();
-    fetchDocuments(); // Ensure this fetches documents
+    fetchDocuments();
   }, []);
 
   return (
@@ -76,8 +127,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         fetchDisks,
         downloads,
         fetchDownloads,
-        documents, // Make sure documents are passed correctly
-        fetchDocuments, // Add fetchDocuments to the context
+        documents,
+        fetchDocuments,
+        handleBack,
+        handleHome,
+        searchValue,
+        handleSearch,
+        fileCounter,
+        files,
       }}
     >
       {children}

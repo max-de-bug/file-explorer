@@ -125,7 +125,6 @@ fn list_documents() -> Result<Vec<FileInfo>, String> {
                     file_size,
                     modification_date,
                 });
-                println!("{:?}", files_info)
             }
         }
     }

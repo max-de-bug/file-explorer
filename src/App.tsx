@@ -7,12 +7,14 @@ import { Sidebar } from "./components/SideBar/SideBar";
 import { AppProvider } from "./context/Context";
 import Downloads from "./components/Dashboard/Downloads";
 import Documents from "./components/Dashboard/Documents";
+import Header from "./components/Dashboard/Header";
 
 function App() {
   return (
     <BrowserRouter>
       <AppProvider>
         <Navbar />
+        <Header />
         <div className={styles.flexContainer}>
           <Sidebar />
           <div className={styles.dashboard}>
