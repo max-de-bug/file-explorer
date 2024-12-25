@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { invoke } from "./../../node_modules/@tauri-apps/api/core";
 import {
   createContext,
@@ -28,6 +29,9 @@ interface AppContextType {
   fileCounter: () => Promise<void>;
   searchValue: string;
   handleSearch: (event: ChangeEvent<HTMLInputElement>) => void;
+  currentDirectory: string;
+  handleCurrentDirectory: (directory: string) => void;
+  setCurrentDirectory: React.Dispatch<React.SetStateAction<string>>; // Added this line
 }
 
 // Create the AppContext
@@ -44,6 +48,9 @@ export const AppContext = createContext<AppContextType>({
   handleHome: () => {},
   searchValue: "",
   handleSearch: () => {},
+  currentDirectory: "",
+  handleCurrentDirectory: () => {},
+  setCurrentDirectory: () => {}, // Add a default empty function
 });
 
 // Create the Provider component
@@ -53,6 +60,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [documents, setDocuments] = useState<FileInfo[]>([]);
   const [searchValue, setSearchValue] = useState<string>("");
   const [files, setFiles] = useState<number[]>([0]);
+  const [currentDirectory, setCurrentDirectory] = useState<string>("");
+  const [previousDirectory, setPreviousDirectory] = useState<string>("");
+
+  const navigate = useNavigate();
 
   // Fetch disks from the backend
   const fetchDisks = async () => {
@@ -87,12 +98,19 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   // Navigation logic
   const handleBack = () => {
-    console.log("Navigate to the previous directory");
-    // Add navigation logic here
+    if (currentDirectory === "/") {
+    } else {
+      setCurrentDirectory(previousDirectory);
+      navigate(-1);
+    }
   };
 
   const handleHome = () => {
-    console.log("Navigate to the home directory");
+    if (currentDirectory !== "/") {
+      setPreviousDirectory(currentDirectory);
+      setCurrentDirectory("/");
+      navigate("/");
+    }
     // Add navigation logic here
   };
 
@@ -100,6 +118,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const handleSearch = (event: ChangeEvent<HTMLInputElement>) => {
     setSearchValue(event.target.value);
     console.log("Search Value:", event.target.value);
+  };
+
+  const handleCurrentDirectory = (directory: string) => {
+    setCurrentDirectory(directory);
+    console.log("Current Directory:", directory);
   };
 
   // File counter function
@@ -135,6 +158,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         handleSearch,
         fileCounter,
         files,
+        handleCurrentDirectory,
+        currentDirectory,
+        setCurrentDirectory,
       }}
     >
       {children}

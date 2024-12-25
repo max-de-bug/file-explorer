@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import styles from "./Sidebar.module.scss";
 import { useNavigate } from "react-router-dom";
+import { useContext } from "react";
+import { AppContext } from "../../context/Context";
 
 const menuItems = [
   { icon: Home, label: "Home", path: "/" },
@@ -22,6 +24,7 @@ const menuItems = [
 
 export function Sidebar() {
   const navigate = useNavigate();
+  const { setCurrentDirectory } = useContext(AppContext); // Access context data
 
   return (
     <div className={styles.sidebarContainer}>
@@ -30,7 +33,10 @@ export function Sidebar() {
           <button
             key={item.path}
             className={styles.menuItem}
-            onClick={() => navigate(item.path)} // Use navigate directly
+            onClick={() => {
+              setCurrentDirectory(item.path);
+              navigate(item.path);
+            }}
           >
             <item.icon size={18} />
             <span className={styles.label}>{item.label}</span>
