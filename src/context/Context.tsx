@@ -60,7 +60,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [documents, setDocuments] = useState<FileInfo[]>([]);
   const [searchValue, setSearchValue] = useState<string>("");
   const [files, setFiles] = useState<number[]>([0]);
-  const [currentDirectory, setCurrentDirectory] = useState<string>("");
+  const [currentDirectory, setCurrentDirectory] = useState<string>("/");
   const [previousDirectory, setPreviousDirectory] = useState<string>("");
 
   const navigate = useNavigate();
@@ -98,10 +98,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   // Navigation logic
   const handleBack = () => {
-    if (currentDirectory === "/") {
+    if (currentDirectory === "/" || previousDirectory === "") {
+      setCurrentDirectory("/");
+      setPreviousDirectory(""); // Clear previous directory
+      console.log("Back to root directory: /");
+      navigate(-1);
     } else {
       setCurrentDirectory(previousDirectory);
-      navigate(-1);
+      setPreviousDirectory("/");
+      console.log("Navigated to previous directory:", previousDirectory);
     }
   };
 
@@ -121,7 +126,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const handleCurrentDirectory = (directory: string) => {
-    setCurrentDirectory(directory);
+    setCurrentDirectory(directory.trim() === "" ? "/" : directory);
     console.log("Current Directory:", directory);
   };
 
