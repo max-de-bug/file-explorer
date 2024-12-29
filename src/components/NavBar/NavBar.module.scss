@@ -5,6 +5,25 @@
 }
 
 .directoryInput {
+  padding: 8px;
+  font-size: 14px;
   width: 100%;
-  height: 10px;
+}
+
+.breadcrumbs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.breadcrumbButton {
+  background: none;
+  border: none;
+  color: blue;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.breadcrumbButton:hover {
+  text-decoration: none;
 }

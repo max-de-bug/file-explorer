@@ -30,7 +30,7 @@ interface AppContextType {
   searchValue: string;
   handleSearch: (event: ChangeEvent<HTMLInputElement>) => void;
   currentDirectory: string;
-  handleCurrentDirectory: (directory: string) => void;
+  handleCurrentDirectory: (event: ChangeEvent<HTMLInputElement>) => void;
   setCurrentDirectory: React.Dispatch<React.SetStateAction<string>>; // Added this line
 }
 
@@ -125,8 +125,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     console.log("Search Value:", event.target.value);
   };
 
-  const handleCurrentDirectory = (directory: string) => {
-    setCurrentDirectory(directory.trim() === "" ? "/" : directory);
+  const handleCurrentDirectory = (event: ChangeEvent<HTMLInputElement>) => {
+    const directory = event.target.value.trim();
+    setCurrentDirectory(
+      directory === "" ? "/" : directory.startsWith("/") ? directory : "/"
+    );
     console.log("Current Directory:", directory);
   };
 
