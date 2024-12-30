@@ -9,13 +9,11 @@ const Navbar = () => {
   const directorySegments =
     currentDirectory === "/"
       ? ["/"]
-      : ["/", ...currentDirectory.split("/").filter(Boolean)];
+      : currentDirectory.split("/").filter(Boolean);
 
-  const handleNavigateToSegment = (index: number) => {
-    const newPath = directorySegments.slice(0, index + 1).join("/");
-    // Ensure the path starts with '/' but avoid adding an extra one
-    const pathToUpdate = newPath.startsWith("/") ? newPath : "/" + newPath;
-    handleCurrentDirectory({ target: { value: pathToUpdate } }); // Update directory in context
+  const handleNavigateToSegment = (index) => {
+    const newPath = "/" + directorySegments.slice(0, index + 1).join("/");
+    handleCurrentDirectory({ target: { value: newPath } }); // Update directory in context
   };
 
   return (
@@ -28,7 +26,7 @@ const Navbar = () => {
             onClick={() => handleNavigateToSegment(index)}
             className={styles.breadcrumbButton}
           >
-            {segment}
+            {index === 0 ? "Root" : segment}
           </button>
         ))}
       </div>
