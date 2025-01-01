@@ -99,15 +99,24 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   // Navigation logic
   const handleBack = () => {
     if (currentDirectory === "/" || previousDirectory === "") {
-      setCurrentDirectory("/");
-      setPreviousDirectory(""); // Clear previous directory
-      console.log("Back to root directory: /");
-      navigate(-1);
-    } else {
-      setCurrentDirectory(previousDirectory);
-      setPreviousDirectory("/");
-      console.log("Navigated to previous directory:", previousDirectory);
+      console.log(
+        "Already at the root directory or no previous directory to navigate to."
+      );
+      return;
     }
+
+    // Save the current directory as the new previous directory
+    const newPreviousDirectory =
+      currentDirectory.substring(0, currentDirectory.lastIndexOf("/")) || "/";
+
+    setPreviousDirectory(newPreviousDirectory);
+    setCurrentDirectory(previousDirectory);
+
+    console.log("Navigating back to:", previousDirectory);
+    console.log("Updated previousDirectory to:", newPreviousDirectory);
+
+    // Optionally navigate using React Router
+    navigate(previousDirectory);
   };
 
   const handleHome = () => {
