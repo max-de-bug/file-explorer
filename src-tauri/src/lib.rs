@@ -5,21 +5,79 @@ use dirs_next::home_dir;
 use sysinfo::Disks;
 
 #[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug)]
+pub struct DiskInfo {
+    pub name: String,
+    pub kind: String,
+    pub total_space: u64,
+    pub available_space: u64,
+    pub used_space: u64,
+    pub formatted_total: String,
+    pub formatted_available: String,
+    pub formatted_used: String,
+}
+
+impl DiskInfo {
+    pub fn new(disk: &sysinfo::Disk) -> Self {
+        let total = disk.total_space();
+        let available = disk.available_space();
+        let used = total - available;
+        
+        Self {
+            name: disk.name().to_string_lossy().to_string(),
+            kind: format!("{:?}", disk.kind()),
+            total_space: total,
+            available_space: available,
+            used_space: used,
+            formatted_total: FileInfo::format_size(total),
+            formatted_available: FileInfo::format_size(available),
+            formatted_used: FileInfo::format_size(used),
+        }
+    }
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Debug)]  // Deriving Debug here
 
 pub struct FileInfo {
     pub file_name: String,
     pub file_size: u64,
     pub modification_date: String,
+    pub formatted_size: String,
+}
+
+impl FileInfo {
+    pub fn new(file_name: String, file_size: u64, modification_date: String) -> Self {
+        Self {
+            file_name,
+            file_size,
+            modification_date,
+            formatted_size: Self::format_size(file_size),
+        }
+    }
+
+    fn format_size(bytes: u64) -> String {
+        const KB: u64 = 1024;
+        const MB: u64 = KB * 1024;
+        const GB: u64 = MB * 1024;
+        const TB: u64 = GB * 1024;
+
+        match bytes {
+            0..KB => format!("{} B", bytes),
+            KB..MB => format!("{:.1} KB", bytes as f64 / KB as f64),
+            MB..GB => format!("{:.1} MB", bytes as f64 / MB as f64),
+            GB..TB => format!("{:.1} GB", bytes as f64 / GB as f64),
+            TB.. => format!("{:.1} TB", bytes as f64 / TB as f64),
+        }
+    }
 }
 // List all disks on the system
 #[tauri::command]
-fn list_disks() -> Vec<String> {
+fn list_disks() -> Vec<DiskInfo> {
     let disks = Disks::new_with_refreshed_list();
     let mut disk_info = Vec::new();
     for disk in disks.list() {
-        disk_info.push(format!(
-            "{:?}: {:?}, Total Space: {}", disk.name(), disk.kind(), disk.total_space()));
+        disk_info.push(DiskInfo::new(disk));
     }
     disk_info
 }
@@ -74,6 +132,7 @@ fn list_downloads() -> Result<Vec<FileInfo>, String> {
                     file_name,
                     file_size,
                     modification_date,
+                    formatted_size: FileInfo::format_size(file_size),
                 });
             }
         }
@@ -124,6 +183,7 @@ fn list_documents() -> Result<Vec<FileInfo>, String> {
                     file_name,
                     file_size,
                     modification_date,
+                    formatted_size: FileInfo::format_size(file_size),
                 });
             }
         }

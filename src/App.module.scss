@@ -1,18 +1,15 @@
 .flexContainer {
   display: flex;
-  gap: 15px;
   align-items: flex-start;
   justify-content: flex-start;
   height: 100vh;
   box-sizing: border-box;
-  padding: 10px;
 }
 .dashboard {
   background-color: black;
   flex: 1;
   padding: 15px;
   color: #fff;
-  border-radius: 5px;
   overflow-y: auto;
   box-sizing: border-box;
   height: 100%;

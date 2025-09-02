@@ -1,24 +1,38 @@
 import { useNavigate } from "react-router-dom";
-import { invoke } from "./../../node_modules/@tauri-apps/api/core";
 import {
   createContext,
   useState,
   useEffect,
+  useReducer,
   ReactNode,
   ChangeEvent,
+  useMemo,
 } from "react";
+import { invoke } from "@tauri-apps/api/core";
 
-// Define the FileInfo type
+// FileInfo type definition
 interface FileInfo {
   file_name: string;
   file_size: number;
   modification_date: string;
+  formatted_size: string;
 }
 
-// Define the AppContext type
+// DiskInfo type definition
+interface DiskInfo {
+  name: string;
+  kind: string;
+  total_space: number;
+  available_space: number;
+  used_space: number;
+  formatted_total: string;
+  formatted_available: string;
+  formatted_used: string;
+}
+
+// AppContextType for type safety
 interface AppContextType {
-  disks: string[];
-  files: number[];
+  disks: DiskInfo[];
   fetchDisks: () => Promise<void>;
   downloads: FileInfo[];
   fetchDownloads: () => Promise<void>;
@@ -26,19 +40,52 @@ interface AppContextType {
   fetchDocuments: () => Promise<void>;
   handleBack: () => void;
   handleHome: () => void;
-  fileCounter: () => Promise<void>;
   searchValue: string;
   handleSearch: (event: ChangeEvent<HTMLInputElement>) => void;
   currentDirectory: string;
   handleCurrentDirectory: (event: ChangeEvent<HTMLInputElement>) => void;
-  setCurrentDirectory: React.Dispatch<React.SetStateAction<string>>; // Added this line
+  setCurrentDirectory: (directory: string | ((prev: string) => string)) => void;
 }
 
-// Create the AppContext
+// Reducer for managing state
+type State = {
+  disks: DiskInfo[];
+  downloads: FileInfo[];
+  documents: FileInfo[];
+  currentDirectory: string;
+};
+
+type Action =
+  | { type: "SET_DISKS"; payload: DiskInfo[] }
+  | { type: "SET_DOWNLOADS"; payload: FileInfo[] }
+  | { type: "SET_DOCUMENTS"; payload: FileInfo[] }
+  | { type: "SET_CURRENT_DIRECTORY"; payload: string };
+
+const initialState: State = {
+  disks: [],
+  downloads: [],
+  documents: [],
+  currentDirectory: "/",
+};
+
+const reducer = (state: State, action: Action): State => {
+  switch (action.type) {
+    case "SET_DISKS":
+      return { ...state, disks: action.payload };
+    case "SET_DOWNLOADS":
+      return { ...state, downloads: action.payload };
+    case "SET_DOCUMENTS":
+      return { ...state, documents: action.payload };
+    case "SET_CURRENT_DIRECTORY":
+      return { ...state, currentDirectory: action.payload };
+    default:
+      return state;
+  }
+};
+
+// Context with default values
 export const AppContext = createContext<AppContextType>({
   disks: [],
-  files: [],
-  fileCounter: async () => {},
   fetchDisks: async () => {},
   downloads: [],
   fetchDownloads: async () => {},
@@ -50,107 +97,92 @@ export const AppContext = createContext<AppContextType>({
   handleSearch: () => {},
   currentDirectory: "",
   handleCurrentDirectory: () => {},
-  setCurrentDirectory: () => {}, // Add a default empty function
+  setCurrentDirectory: () => {},
 });
 
-// Create the Provider component
+// Provider component
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [disks, setDisks] = useState<string[]>([]);
-  const [downloads, setDownloads] = useState<FileInfo[]>([]);
-  const [documents, setDocuments] = useState<FileInfo[]>([]);
+  const [state, dispatch] = useReducer(reducer, initialState);
   const [searchValue, setSearchValue] = useState<string>("");
-  const [files, setFiles] = useState<number[]>([0]);
-  const [currentDirectory, setCurrentDirectory] = useState<string>("/");
   const [previousDirectory, setPreviousDirectory] = useState<string>("");
 
   const navigate = useNavigate();
 
-  // Fetch disks from the backend
+  // API utility function to invoke Tauri commands
+  const invokeTauriCommand = async (command: string): Promise<any> => {
+    try {
+      return await invoke(command);
+    } catch (error) {
+      console.error(`Error invoking ${command}:`, error);
+      throw error;
+    }
+  };
+
+  // Fetch disks from backend
   const fetchDisks = async () => {
-    try {
-      const result = await invoke<string[]>("list_disks");
-      setDisks(result || []);
-    } catch (error) {
-      console.error("Error fetching disks:", error);
-    }
+    const result = (await invokeTauriCommand("list_disks")) as DiskInfo[];
+    dispatch({ type: "SET_DISKS", payload: result });
   };
 
-  // Fetch downloads from the backend
+  // Fetch downloads from backend
   const fetchDownloads = async () => {
-    try {
-      const result = await invoke<FileInfo[]>("list_downloads");
-      setDownloads(result || []);
-      console.log("Downloads fetched:", result);
-    } catch (error) {
-      console.error("Error fetching downloads:", error);
-    }
+    const result = (await invokeTauriCommand("list_downloads")) as FileInfo[];
+    dispatch({ type: "SET_DOWNLOADS", payload: result });
   };
 
-  // Fetch documents from the backend
+  // Fetch documents from backend
   const fetchDocuments = async () => {
-    try {
-      const result = await invoke<FileInfo[]>("list_documents");
-      setDocuments(result || []);
-    } catch (error) {
-      console.error("Error fetching documents:", error);
-    }
+    const result = (await invokeTauriCommand("list_documents")) as FileInfo[];
+    dispatch({ type: "SET_DOCUMENTS", payload: result });
   };
 
-  // Navigation logic
+  // Handle back navigation
   const handleBack = () => {
-    if (currentDirectory === "/" || previousDirectory === "") {
-      console.log(
-        "Already at the root directory or no previous directory to navigate to."
-      );
+    if (state.currentDirectory === "/" || previousDirectory === "") {
+      console.log("Already at root directory or no previous directory.");
       return;
     }
 
-    // Save the current directory as the new previous directory
     const newPreviousDirectory =
-      currentDirectory.substring(0, currentDirectory.lastIndexOf("/")) || "/";
+      state.currentDirectory.substring(
+        0,
+        state.currentDirectory.lastIndexOf("/")
+      ) || "/";
 
     setPreviousDirectory(newPreviousDirectory);
-    setCurrentDirectory(previousDirectory);
-
-    console.log("Navigating back to:", previousDirectory);
-    console.log("Updated previousDirectory to:", newPreviousDirectory);
-
-    // Optionally navigate using React Router
-    navigate(previousDirectory);
+    dispatch({ type: "SET_CURRENT_DIRECTORY", payload: newPreviousDirectory });
+    navigate(newPreviousDirectory);
   };
 
+  // Handle home navigation
   const handleHome = () => {
-    if (currentDirectory !== "/") {
-      setPreviousDirectory(currentDirectory);
-      setCurrentDirectory("/");
+    if (state.currentDirectory !== "/") {
+      setPreviousDirectory(state.currentDirectory);
+      dispatch({ type: "SET_CURRENT_DIRECTORY", payload: "/" });
       navigate("/");
     }
-    // Add navigation logic here
   };
 
-  // Handle search input
+  // Handle search value change
   const handleSearch = (event: ChangeEvent<HTMLInputElement>) => {
     setSearchValue(event.target.value);
     console.log("Search Value:", event.target.value);
   };
 
+  // Handle current directory change
   const handleCurrentDirectory = (event: ChangeEvent<HTMLInputElement>) => {
     const directory = event.target.value.trim();
-    setCurrentDirectory(
-      directory === "" ? "/" : directory.startsWith("/") ? directory : "/"
-    );
-    console.log("Current Directory:", directory);
-  };
-
-  // File counter function
-  const fileCounter = async () => {
-    try {
-      const updatedFiles = [1]; // Example logic to update files
-      setFiles(updatedFiles);
-      console.log("Files updated:", updatedFiles);
-    } catch (error) {
-      console.error("Error in fileCounter:", error);
-    }
+    const newDirectory =
+      directory === ""
+        ? "/"
+        : directory.startsWith("/")
+        ? directory
+        : `/${directory}`;
+    dispatch({
+      type: "SET_CURRENT_DIRECTORY",
+      payload: newDirectory,
+    });
+    console.log("Current Directory:", newDirectory);
   };
 
   // Fetch initial data on mount
@@ -160,27 +192,40 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     fetchDocuments();
   }, []);
 
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo(
+    () => ({
+      disks: state.disks,
+      fetchDisks,
+      downloads: state.downloads,
+      fetchDownloads,
+      documents: state.documents,
+      fetchDocuments,
+      handleBack,
+      handleHome,
+      searchValue,
+      handleSearch,
+      handleCurrentDirectory,
+      currentDirectory: state.currentDirectory,
+      setCurrentDirectory: (directory: string | ((prev: string) => string)) =>
+        dispatch({
+          type: "SET_CURRENT_DIRECTORY",
+          payload:
+            typeof directory === "function"
+              ? directory(state.currentDirectory)
+              : directory,
+        }),
+    }),
+    [
+      state.disks,
+      state.downloads,
+      state.documents,
+      state.currentDirectory,
+      searchValue,
+    ]
+  );
+
   return (
-    <AppContext.Provider
-      value={{
-        disks,
-        fetchDisks,
-        downloads,
-        fetchDownloads,
-        documents,
-        fetchDocuments,
-        handleBack,
-        handleHome,
-        searchValue,
-        handleSearch,
-        fileCounter,
-        files,
-        handleCurrentDirectory,
-        currentDirectory,
-        setCurrentDirectory,
-      }}
-    >
-      {children}
-    </AppContext.Provider>
+    <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>
   );
 };

@@ -17,7 +17,7 @@ const Downloads = () => {
                 Uploaded: {file.modification_date}
               </span>
               <span className={styles.fileSize}>
-                Size: {file.file_size} bytes
+                Size: {file.formatted_size}
               </span>
             </li>
           ))}

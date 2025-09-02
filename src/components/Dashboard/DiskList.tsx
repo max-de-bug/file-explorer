@@ -1,17 +1,24 @@
 import { useContext } from "react";
 import { AppContext } from "../../context/Context";
+import styles from "../Dashboard/DisklList.module.scss";
 const DiskList = () => {
   const { disks } = useContext(AppContext); // Access disks and fetchDisks from context
 
-  // Optionally, you could call fetchDisks here if you want to allow re-fetching
-
   return (
-    <div>
+    <div className={styles.container}>
       <h2>Disks</h2>
       {disks.length > 0 ? (
         <ul>
           {disks.map((disk, index) => (
-            <li key={index}>{disk}</li>
+            <li key={index}>
+              <div>
+                <strong>{disk.name}</strong> ({disk.kind})
+              </div>
+              <div>
+                Total: {disk.formatted_total} | Used: {disk.formatted_used} |
+                Available: {disk.formatted_available}
+              </div>
+            </li>
           ))}
         </ul>
       ) : (

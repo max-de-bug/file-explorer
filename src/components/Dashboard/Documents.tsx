@@ -14,12 +14,12 @@ const Documents = () => {
             {documents.map((file, index) => (
               <li key={index} className={styles.listItem}>
                 <span className={styles.fileName}>{file.file_name}</span>
-                {/* <span className={styles.fileDate}>
-                Modified: {file.modification_date}
-              </span>
-              <span className={styles.fileSize}>
-                Size: {file.file_size} bytes
-              </span> */}
+                <span className={styles.fileDate}>
+                  Modified: {file.modification_date}
+                </span>
+                <span className={styles.fileSize}>
+                  Size: {file.formatted_size}
+                </span>
               </li>
             ))}
           </ul>

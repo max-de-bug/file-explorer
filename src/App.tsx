@@ -8,6 +8,7 @@ import { AppProvider } from "./context/Context";
 import Downloads from "./components/Dashboard/Downloads";
 import Documents from "./components/Dashboard/Documents";
 import Header from "./components/Dashboard/Header";
+import Path from "./components/Path/Path";
 
 function App() {
   return (
@@ -20,11 +21,12 @@ function App() {
           <div className={styles.dashboard}>
             <Routes>
               <Route path="/" element={<DiskList />} />
-              <Route path="/Dashboard/Downloads" element={<Downloads />} />
-              <Route path="/Dashboard/Documents" element={<Documents />} />
+              <Route path="/Downloads" element={<Downloads />} />
+              <Route path="/Documents" element={<Documents />} />
             </Routes>
           </div>
         </div>
+        <Path />
       </AppProvider>
     </BrowserRouter>
   );
