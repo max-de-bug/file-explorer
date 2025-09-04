@@ -7,7 +7,6 @@ const Documents = () => {
 
   return (
     <>
-      <h1 className={styles.header}>Documents</h1>
       <div className={styles.container}>
         {documents?.length ? (
           <ul className={styles.list}>

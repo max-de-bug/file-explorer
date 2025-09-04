@@ -19,13 +19,19 @@
     overflow: hidden;
 
     .listItem {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      align-items: center;
       padding: 10px 15px;
       border-bottom: 1px solid #ddd;
-      background-color: #f9f9f9;
-      transition: background-color 0.2s;
+      background-color: #1e1e2e;
+      color: #ffffff;
+      cursor: pointer;
 
       &:hover {
-        background-color: #f0f0f0;
+        background-color: #2a2a3e;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        transform: translateY(-1px);
       }
 
       .fileName {
@@ -36,7 +42,15 @@
       .fileDate,
       .fileSize {
         font-size: 14px;
-        color: #333;
+        color: #b8b8b8;
+      }
+
+      .fileDate {
+        text-align: center;
+      }
+
+      .fileSize {
+        text-align: right;
       }
     }
   }

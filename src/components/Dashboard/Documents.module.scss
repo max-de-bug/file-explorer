@@ -14,9 +14,18 @@
 }
 
 .listItem {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  align-items: center;
   margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: #2a2a3e;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    transform: translateY(-1px);
+  }
 }
 
 .fileName {
@@ -27,5 +36,13 @@
 .fileDate,
 .fileSize {
   font-size: 0.9rem;
-  color: gray;
+  color: #b8b8b8;
+}
+
+.fileDate {
+  text-align: center;
+}
+
+.fileSize {
+  text-align: right;
 }

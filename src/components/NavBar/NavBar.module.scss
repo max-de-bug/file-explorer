@@ -1,5 +1,4 @@
 .container {
-  padding: 2px;
   font-family: "Arial", sans-serif;
   color: #333;
   background-color: #1e1e2e;
@@ -27,4 +26,11 @@
 
 .breadcrumbButton:hover {
   text-decoration: none;
+}
+
+.title {
+  padding: 5px;
+  font-size: 10;
+  font-weight: bold;
+  margin-bottom: 10px;
 }

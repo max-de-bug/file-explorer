@@ -7,7 +7,6 @@ const Downloads = () => {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.header}>Downloads</h1>
       {downloads.length > 0 ? (
         <ul className={styles.list}>
           {downloads.map((file, index: number) => (

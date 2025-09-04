@@ -8,7 +8,7 @@ import {
   HardDrive,
 } from "lucide-react";
 import styles from "./Sidebar.module.scss";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useContext } from "react";
 import { AppContext } from "../../context/Context";
 
@@ -24,24 +24,28 @@ const menuItems = [
 
 export function Sidebar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { setCurrentDirectory } = useContext(AppContext); // Access context data
 
   return (
     <div className={styles.sidebarContainer}>
       <nav className={styles.nav}>
-        {menuItems.map((item) => (
-          <button
-            key={item.path}
-            className={styles.menuItem}
-            onClick={() => {
-              setCurrentDirectory(item.path);
-              navigate(item.path);
-            }}
-          >
-            <item.icon size={18} />
-            <span className={styles.label}>{item.label}</span>
-          </button>
-        ))}
+        {menuItems.map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <button
+              key={item.path}
+              className={`${styles.menuItem} ${isActive ? styles.active : ""}`}
+              onClick={() => {
+                setCurrentDirectory(item.path);
+                navigate(item.path);
+              }}
+            >
+              <item.icon size={18} />
+              <span className={styles.label}>{item.label}</span>
+            </button>
+          );
+        })}
       </nav>
     </div>
   );
