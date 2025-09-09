@@ -6,7 +6,6 @@ const DiskList = () => {
 
   return (
     <div className={styles.container}>
-      <h2>Disks</h2>
       {disks.length > 0 ? (
         <ul>
           {disks.map((disk, index) => (
