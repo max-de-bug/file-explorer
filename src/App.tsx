@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "./App.css";
 import styles from "./App.module.scss";
 import DiskList from "./components/Dashboard/DiskList";
@@ -9,23 +9,7 @@ import Downloads from "./components/Dashboard/Downloads";
 import Documents from "./components/Dashboard/Documents";
 import Header from "./components/Dashboard/Header";
 import Path from "./components/Path/Path";
-import DashboardHeader from "./components/Dashboard/DashboardHeader";
-
-// Component to conditionally render DashboardHeader
-const ConditionalDashboardHeader = () => {
-  const location = useLocation();
-  const routesWithHeader = [
-    "/Downloads",
-    "/Documents",
-    "/Pictures",
-    "/Videos",
-    "/Music",
-  ];
-
-  return routesWithHeader.includes(location.pathname) ? (
-    <DashboardHeader />
-  ) : null;
-};
+import ConditionalDashboardHeader from "./components/Dashboard/ConditionalDashboardHeader";
 
 function App() {
   return (
