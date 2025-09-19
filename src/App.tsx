@@ -10,6 +10,7 @@ import Documents from "./components/Dashboard/Documents";
 import Header from "./components/Dashboard/Header";
 import Path from "./components/Path/Path";
 import ConditionalDashboardHeader from "./components/Dashboard/ConditionalDashboardHeader";
+import Pictures from "./components/Dashboard/Pictures";
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
               <Route path="/" element={<DiskList />} />
               <Route path="/Downloads" element={<Downloads />} />
               <Route path="/Documents" element={<Documents />} />
+              <Route path="/Pictures" element={<Pictures />} />
             </Routes>
           </div>
         </div>

@@ -1,7 +1,7 @@
 use std::{fs, time::UNIX_EPOCH};
 use chrono::{DateTime, Utc};
 use tauri::command;
-use dirs_next::home_dir;
+use dirs_next::{home_dir, picture_dir, document_dir};
 use sysinfo::Disks;
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -82,7 +82,58 @@ fn list_disks() -> Vec<DiskInfo> {
     disk_info
 }
 
-// List files in the user's Downloads folder
+// List files in the user's Pictures folder
+#[command]
+fn list_pictures() -> Result<Vec<FileInfo>, String> {
+    // Get the Pictures folder path using the dirs_next crate
+    let pictures_dir = picture_dir().ok_or_else(|| "Could not determine Pictures directory".to_string())?;
+
+    // Check if the Pictures folder exists and is a directory
+    if !pictures_dir.exists() {
+        return Err(format!("Pictures folder not found: {:?}", pictures_dir));
+    }
+    if !pictures_dir.is_dir() {
+        return Err(format!("Path is not a directory: {:?}", pictures_dir));
+    }
+
+    // Read the contents of the Pictures directory
+    let entries = fs::read_dir(&pictures_dir).map_err(|e| {
+        format!("Failed to read the Pictures folder: {:?}", e)
+    })?;
+
+    let mut files_info = Vec::new();
+
+    // Iterate over the directory entries and collect file info
+    for entry in entries {
+        if let Ok(entry) = entry {
+            let file_name = entry.file_name().to_string_lossy().into_owned();
+
+            if let Ok(metadata) = entry.metadata() {
+                let file_size = metadata.len();
+
+                // Get the modification date
+                let modification_date = match metadata.modified() {
+                    Ok(time) => {
+                        let duration_since_epoch = time.duration_since(UNIX_EPOCH).unwrap_or_default();
+                        let datetime = DateTime::<Utc>::from_timestamp(duration_since_epoch.as_secs() as i64, 0);
+                        datetime.map_or("Unknown".to_string(), |dt| dt.to_rfc3339())
+                    }
+                    Err(_) => "Unknown".to_string(),
+                };
+
+                // Add the file info to the result
+                files_info.push(FileInfo {
+                    file_name,
+                    file_size,
+                    modification_date,
+                    formatted_size: FileInfo::format_size(file_size),
+                });
+            }
+        }
+    }
+
+    Ok(files_info)
+}
 
 #[command]
 fn list_downloads() -> Result<Vec<FileInfo>, String> {
@@ -142,8 +193,8 @@ fn list_downloads() -> Result<Vec<FileInfo>, String> {
 }
 #[command]
 fn list_documents() -> Result<Vec<FileInfo>, String> {
-    // Get the Documents folder path using the dirs crate
-    let documents_dir = dirs::document_dir().ok_or_else(|| "Could not determine Documents directory".to_string())?;
+    // Get the Documents folder path using the dirs_next crate
+    let documents_dir = document_dir().ok_or_else(|| "Could not determine Documents directory".to_string())?;
 
     // Check if the Documents folder exists and is a directory
     if !documents_dir.exists() {
@@ -172,8 +223,8 @@ fn list_documents() -> Result<Vec<FileInfo>, String> {
                 let modification_date = match metadata.modified() {
                     Ok(time) => {
                         let duration_since_epoch = time.duration_since(UNIX_EPOCH).unwrap_or_default();
-                        let datetime = chrono::NaiveDateTime::from_timestamp_opt(duration_since_epoch.as_secs() as i64, 0);
-                        datetime.map_or("Unknown".to_string(), |dt| dt.to_string())
+                        let datetime = DateTime::<Utc>::from_timestamp(duration_since_epoch.as_secs() as i64, 0);
+                        datetime.map_or("Unknown".to_string(), |dt| dt.to_rfc3339())
                     }
                     Err(_) => "Unknown".to_string(),
                 };
@@ -197,7 +248,7 @@ fn list_documents() -> Result<Vec<FileInfo>, String> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .invoke_handler(tauri::generate_handler![list_disks, list_downloads, list_documents]) // Add list_downloads here
+        .invoke_handler(tauri::generate_handler![list_disks, list_downloads, list_documents, list_pictures]) // Add list_downloads here
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

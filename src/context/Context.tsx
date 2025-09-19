@@ -34,6 +34,8 @@ interface DiskInfo {
 interface AppContextType {
   disks: DiskInfo[];
   fetchDisks: () => Promise<void>;
+  pictures: FileInfo[];
+  fetchPictures: () => Promise<void>;
   downloads: FileInfo[];
   fetchDownloads: () => Promise<void>;
   documents: FileInfo[];
@@ -53,19 +55,22 @@ type State = {
   downloads: FileInfo[];
   documents: FileInfo[];
   currentDirectory: string;
+  pictures: FileInfo[];
 };
 
 type Action =
   | { type: "SET_DISKS"; payload: DiskInfo[] }
   | { type: "SET_DOWNLOADS"; payload: FileInfo[] }
   | { type: "SET_DOCUMENTS"; payload: FileInfo[] }
-  | { type: "SET_CURRENT_DIRECTORY"; payload: string };
+  | { type: "SET_CURRENT_DIRECTORY"; payload: string }
+  | { type: "SET_PICTURES"; payload: FileInfo[] };
 
 const initialState: State = {
   disks: [],
   downloads: [],
   documents: [],
   currentDirectory: "/",
+  pictures: [],
 };
 
 const reducer = (state: State, action: Action): State => {
@@ -78,6 +83,8 @@ const reducer = (state: State, action: Action): State => {
       return { ...state, documents: action.payload };
     case "SET_CURRENT_DIRECTORY":
       return { ...state, currentDirectory: action.payload };
+    case "SET_PICTURES":
+      return { ...state, pictures: action.payload };
     default:
       return state;
   }
@@ -91,6 +98,8 @@ export const AppContext = createContext<AppContextType>({
   fetchDownloads: async () => {},
   documents: [],
   fetchDocuments: async () => {},
+  pictures: [],
+  fetchPictures: async () => {},
   handleBack: () => {},
   handleHome: () => {},
   searchValue: "",
@@ -134,6 +143,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const fetchDocuments = async () => {
     const result = (await invokeTauriCommand("list_documents")) as FileInfo[];
     dispatch({ type: "SET_DOCUMENTS", payload: result });
+  };
+  
+  // Fetch pictures from backend
+  const fetchPictures = async () => {
+    const result = (await invokeTauriCommand("list_pictures")) as FileInfo[];
+    dispatch({ type: "SET_PICTURES", payload: result });
   };
 
   // Handle back navigation
@@ -190,6 +205,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     fetchDisks();
     fetchDownloads();
     fetchDocuments();
+    fetchPictures();
   }, []);
 
   // Memoize context value to prevent unnecessary re-renders
@@ -197,6 +213,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     () => ({
       disks: state.disks,
       fetchDisks,
+      pictures: state.pictures,
+      fetchPictures,
       downloads: state.downloads,
       fetchDownloads,
       documents: state.documents,
