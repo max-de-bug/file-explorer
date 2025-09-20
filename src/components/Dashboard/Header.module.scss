@@ -13,3 +13,27 @@
 .searchInput:focus {
   outline: none;
 }
+
+
+.buttonContainer {
+  width: 100%;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+
+.searchContainer {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+}
+
+// Styles for minimal display mode
+.container.minimal {
+  justify-content: flex-end;
+  
+  .searchContainer {
+    justify-content: flex-end;
+  }
+}

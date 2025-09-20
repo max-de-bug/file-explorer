@@ -2,6 +2,10 @@
   font-family: "Arial", sans-serif;
   color: #333;
   background-color: #1e1e2e;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
 }
 
 .directoryInput {
