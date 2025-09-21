@@ -14,12 +14,12 @@ import { AppContext } from "../../context/Context";
 
 const menuItems = [
   { icon: Home, label: "Home", path: "/" },
-  { icon: Download, label: "Downloads", path: "/Downloads" }, // Updated path
+  { icon: Download, label: "Downloads", path: "/Downloads" },
   { icon: File, label: "Documents", path: "/Documents" },
   { icon: Image, label: "Pictures", path: "/Pictures" },
   { icon: Video, label: "Videos", path: "/Videos" },
   { icon: Music, label: "Music", path: "/Music" },
-  { icon: HardDrive, label: "Disks", path: "/" },
+  { icon: HardDrive, label: "Disks", path: "/disks" },
 ];
 
 export function Sidebar() {

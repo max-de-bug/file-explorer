@@ -1,0 +1,13 @@
+.buttonGroup {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .buttonGroup {
+    gap: 2px;
+  }
+}

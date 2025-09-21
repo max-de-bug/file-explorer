@@ -9,6 +9,7 @@ import {
   useMemo,
 } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { ViewMode, } from "../types/viewMode";
 
 // FileInfo type definition
 interface FileInfo {
@@ -16,6 +17,7 @@ interface FileInfo {
   file_size: number;
   modification_date: string;
   formatted_size: string;
+  image?: string;
 }
 
 // DiskInfo type definition
@@ -47,8 +49,8 @@ interface AppContextType {
   currentDirectory: string;
   handleCurrentDirectory: (event: ChangeEvent<HTMLInputElement>) => void;
   setCurrentDirectory: (directory: string | ((prev: string) => string)) => void;
-  isDisplayMode: boolean;
-  handleDisplayToggle: () => void;
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
 }
 
 // Reducer for managing state
@@ -109,8 +111,10 @@ export const AppContext = createContext<AppContextType>({
   currentDirectory: "",
   handleCurrentDirectory: () => {},
   setCurrentDirectory: () => {},
-  isDisplayMode: false,
-  handleDisplayToggle: () => {},
+  viewMode: 'normal' as ViewMode,
+
+  setViewMode: () => {},
+
 });
 
 // Provider component
@@ -118,8 +122,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [searchValue, setSearchValue] = useState<string>("");
   const [previousDirectory, setPreviousDirectory] = useState<string>("");
-  const [isDisplayMode, setIsDisplayMode] = useState<boolean>(false);
-
+  const [viewMode, setViewMode] = useState<ViewMode>('normal');
   const navigate = useNavigate();
 
   // API utility function to invoke Tauri commands
@@ -205,10 +208,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     console.log("Current Directory:", newDirectory);
   };
 
-  // Handle display mode toggle
-  const handleDisplayToggle = () => {
-    setIsDisplayMode(!isDisplayMode);
-  };
+
+
 
   // Fetch initial data on mount
   useEffect(() => {
@@ -243,8 +244,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
               ? directory(state.currentDirectory)
               : directory,
         }),
-      isDisplayMode,
-      handleDisplayToggle,
+      viewMode,
+      setViewMode,
+
     }),
     [
       state.disks,
@@ -252,7 +254,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       state.documents,
       state.currentDirectory,
       searchValue,
-      isDisplayMode,
+      viewMode,
     ]
   );
 

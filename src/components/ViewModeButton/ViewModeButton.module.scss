@@ -1,0 +1,41 @@
+.button {
+  padding: 8px 16px;
+  border: 1px solid #333;
+  background-color: #2d2d44;
+  color: #ffffff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  margin: 0 2px;
+
+  &:hover {
+    background-color: #3d3d54;
+    border-color: #444;
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+}
+
+.active {
+  background-color: #007acc;
+  border-color: #0099ff;
+  color: #ffffff;
+  box-shadow: 0 0 8px rgba(0, 122, 204, 0.3);
+
+  &:hover {
+    background-color: #0088dd;
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .button {
+    padding: 6px 12px;
+    font-size: 12px;
+    margin: 0 1px;
+  }
+}
