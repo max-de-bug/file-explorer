@@ -14,7 +14,6 @@
   outline: none;
 }
 
-
 .buttonContainer {
   width: 100%;
   display: flex;
@@ -22,6 +21,31 @@
   align-items: center;
 }
 
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 6px; /* reduced padding */
+  border-radius: 6px;
+  background-color: #0f0f0f; /* dark background */
+  color: #ffffff; /* icons use currentColor */
+  border: 1px solid #2a2a2a;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease,
+    opacity 0.15s ease;
+
+  &:hover {
+    background-color: #151515;
+  }
+
+  &:active {
+    background-color: #0b0b0b;
+    border-color: #333333;
+  }
+
+  /* Remove default button artifacts if any */
+  border-width: 1px;
+}
 
 .searchContainer {
   width: 100%;
@@ -32,7 +56,7 @@
 // Styles for minimal display mode
 .container.minimal {
   justify-content: flex-end;
-  
+
   .searchContainer {
     justify-content: flex-end;
   }

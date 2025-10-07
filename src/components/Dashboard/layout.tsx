@@ -13,16 +13,19 @@ const DashboardLayout = () => {
 
   const renderDashboardContent = () => {
     switch (viewMode) {
-      case 'minimal':
+      case "minimal":
         return (
           <div className={styles.minimalView}>
-            <div className={styles.minimalContent}>
-              <h3>Minimal View</h3>
-              <p>This is a clean, minimal dashboard view</p>
-            </div>
+            <Routes>
+              <Route path="/" element={<DiskList />} />
+              <Route path="/disks" element={<DiskList />} />
+              <Route path="/Downloads" element={<Downloads />} />
+              <Route path="/Documents" element={<Documents />} />
+              <Route path="/Pictures" element={<Pictures />} />
+            </Routes>
           </div>
         );
-      case 'grid':
+      case "grid":
         return (
           <div className={styles.gridView}>
             <div className={styles.gridContent}>
@@ -31,7 +34,7 @@ const DashboardLayout = () => {
             </div>
           </div>
         );
-      case 'list':
+      case "list":
         return (
           <div className={styles.listView}>
             <div className={styles.listContent}>
@@ -40,7 +43,7 @@ const DashboardLayout = () => {
             </div>
           </div>
         );
-      case 'normal':
+      case "normal":
       default:
         return (
           <div className={styles.normalView}>

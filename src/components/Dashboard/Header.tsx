@@ -1,6 +1,7 @@
 import { useContext } from "react";
 import styles from "./Header.module.scss";
 import { AppContext } from "../../context/Context";
+import { Home, ArrowLeft } from "lucide-react";
 
 const Header = () => {
   const { handleBack, handleHome, handleSearch, searchValue } =
@@ -9,11 +10,19 @@ const Header = () => {
   return (
     <div className={styles.container}>
       <div className={styles.buttonContainer}>
-        <button className={styles.button} onClick={handleHome}>
-          Home
+        <button
+          className={styles.button}
+          onClick={handleHome}
+          aria-label="Home"
+        >
+          <Home size={18} />
         </button>
-        <button className={styles.button} onClick={handleBack}>
-          Back
+        <button
+          className={styles.button}
+          onClick={handleBack}
+          aria-label="Back"
+        >
+          <ArrowLeft size={18} />
         </button>
       </div>
       <div className={styles.searchContainer}>
