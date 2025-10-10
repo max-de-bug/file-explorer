@@ -38,13 +38,20 @@
 .gridView {
   width: 100%;
   height: 100%;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
   gap: 1rem;
   padding: 1rem;
+  align-content: flex-start;
+  align-items: stretch;
   background: #1e1e2e;
   
   .gridContent {
+    /* Acts as a file card */
+    flex: 1 1 200px; /* grow, shrink, basis */
+    max-width: 320px; /* avoid overly wide cards on large screens */
+    box-sizing: border-box;
     background: #2d2d44;
     padding: 1.5rem;
     border-radius: 8px;
@@ -100,7 +107,11 @@
   }
   
   .gridView {
-    grid-template-columns: 1fr;
     padding: 0.5rem;
+  }
+
+  .gridView .gridContent {
+    flex: 1 1 100%;
+    max-width: 100%;
   }
 }
