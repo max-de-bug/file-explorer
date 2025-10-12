@@ -17,17 +17,17 @@
   justify-content: center;
   background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
   color: #ffffff;
-  
+
   .minimalContent {
     text-align: center;
     padding: 2rem;
-    
+
     h3 {
       font-size: 2rem;
       margin-bottom: 1rem;
       color: #ffffff;
     }
-    
+
     p {
       font-size: 1.1rem;
       opacity: 0.8;
@@ -46,7 +46,7 @@
   align-content: flex-start;
   align-items: stretch;
   background: #1e1e2e;
-  
+
   .gridContent {
     /* Acts as a file card */
     flex: 1 1 200px; /* grow, shrink, basis */
@@ -57,37 +57,88 @@
     border-radius: 8px;
     color: #ffffff;
     text-align: center;
-    
-    h3 {
-      margin-bottom: 0.5rem;
-      color: #ffffff;
-    }
-    
-    p {
-      opacity: 0.8;
-    }
   }
 }
 
+// List view styles
 .listView {
   width: 100%;
   height: 100%;
   background: #1e1e2e;
   color: #ffffff;
-  
+
   .listContent {
     padding: 1rem;
-    
+
     h3 {
       margin-bottom: 1rem;
       color: #ffffff;
       border-bottom: 2px solid #2d2d44;
       padding-bottom: 0.5rem;
     }
-    
+
     p {
       opacity: 0.8;
       line-height: 1.6;
+    }
+
+    .tableWrapper {
+      margin-top: 0.5rem;
+      border: 1px solid #2d2d44;
+      border-radius: 8px;
+      overflow: auto;
+      background: #161624;
+    }
+
+    .listTable {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 0.95rem;
+
+      thead {
+        position: sticky;
+        top: 0;
+        background: #202036;
+        z-index: 1;
+      }
+
+      th,
+      td {
+        text-align: left;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #2d2d44;
+        white-space: nowrap;
+      }
+
+      th {
+        color: #c7c9ff;
+        font-weight: 600;
+        border-bottom: 1px solid #3a3a5a;
+      }
+
+      tbody tr {
+        transition: background-color 0.15s ease;
+      }
+
+      tbody tr:hover {
+        background-color: #1f1f32;
+      }
+    }
+
+    .emptyState {
+      padding: 1rem 0;
+      text-align: center;
+
+      h4 {
+        margin: 0 0 0.25rem 0;
+        color: #ffffff;
+      }
+
+      p {
+        margin: 0;
+        opacity: 0.75;
+      }
     }
   }
 }
@@ -96,16 +147,16 @@
 @media (max-width: 768px) {
   .minimalView .minimalContent {
     padding: 1rem;
-    
+
     h3 {
       font-size: 1.5rem;
     }
-    
+
     p {
       font-size: 1rem;
     }
   }
-  
+
   .gridView {
     padding: 0.5rem;
   }
