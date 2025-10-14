@@ -3,6 +3,13 @@ use chrono::{DateTime, Utc};
 use tauri::command;
 use dirs_next::{home_dir, picture_dir, document_dir};
 use sysinfo::Disks;
+use once_cell::sync::Lazy;
+use blake3;
+use std::collections::HashMap;
+use std::sync::Mutex;
+
+
+static FILE_INDEX: Lazy<Mutex<HashMap<String, FileInfo>>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
 #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Debug)]
@@ -36,23 +43,23 @@ impl DiskInfo {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
-#[derive(Debug)]  // Deriving Debug here
-
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub struct FileInfo {
     pub file_name: String,
     pub file_size: u64,
     pub modification_date: String,
     pub formatted_size: String,
+    pub file_path: String,
 }
 
 impl FileInfo {
-    pub fn new(file_name: String, file_size: u64, modification_date: String) -> Self {
+    pub fn new(file_name: String, file_size: u64, modification_date: String, file_path: String) -> Self {
         Self {
             file_name,
             file_size,
             modification_date,
             formatted_size: Self::format_size(file_size),
+            file_path,
         }
     }
 
@@ -107,6 +114,7 @@ fn list_pictures() -> Result<Vec<FileInfo>, String> {
     for entry in entries {
         if let Ok(entry) = entry {
             let file_name = entry.file_name().to_string_lossy().into_owned();
+            let file_path = entry.path().to_string_lossy().into_owned();
 
             if let Ok(metadata) = entry.metadata() {
                 let file_size = metadata.len();
@@ -127,6 +135,7 @@ fn list_pictures() -> Result<Vec<FileInfo>, String> {
                     file_size,
                     modification_date,
                     formatted_size: FileInfo::format_size(file_size),
+                    file_path,
                 });
             }
         }
@@ -161,6 +170,7 @@ fn list_downloads() -> Result<Vec<FileInfo>, String> {
     for entry in entries {
         if let Ok(entry) = entry {
             let file_name = entry.file_name().to_string_lossy().into_owned();
+            let file_path = entry.path().to_string_lossy().into_owned();
             
             if let Ok(metadata) = entry.metadata() {
                 // Get the file size
@@ -184,6 +194,7 @@ fn list_downloads() -> Result<Vec<FileInfo>, String> {
                     file_size,
                     modification_date,
                     formatted_size: FileInfo::format_size(file_size),
+                    file_path,
                 });
             }
         }
@@ -215,6 +226,7 @@ fn list_documents() -> Result<Vec<FileInfo>, String> {
     for entry in entries {
         if let Ok(entry) = entry {
             let file_name = entry.file_name().to_string_lossy().into_owned();
+            let file_path = entry.path().to_string_lossy().into_owned();
 
             if let Ok(metadata) = entry.metadata() {
                 let file_size = metadata.len();
@@ -235,12 +247,80 @@ fn list_documents() -> Result<Vec<FileInfo>, String> {
                     file_size,
                     modification_date,
                     formatted_size: FileInfo::format_size(file_size),
+                    file_path,
                 });
             }
         }
     }
 
     Ok(files_info)
+}
+
+pub fn build_index() -> Result<(), String> {
+    let mut index = FILE_INDEX.lock().unwrap();
+    index.clear();
+
+    let search_dir = "./";
+    for entry in fs::read_dir(search_dir).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        let path = entry.path();
+
+        if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+            // Get metadata for file size and modification date
+            let metadata = entry.metadata().map_err(|e| e.to_string())?;
+            let file_size = metadata.len();
+            
+            let modification_date = match metadata.modified() {
+                Ok(time) => {
+                    let duration_since_epoch = time.duration_since(UNIX_EPOCH).unwrap_or_default();
+                    let datetime = DateTime::<Utc>::from_timestamp(duration_since_epoch.as_secs() as i64, 0);
+                    datetime.map_or("Unknown".to_string(), |dt| dt.to_rfc3339())
+                }
+                Err(_) => "Unknown".to_string(),
+            };
+
+            // Compute hash of lowercase filename
+            let hash = blake3::hash(name.to_lowercase().as_bytes()).to_hex().to_string();
+
+            index.insert(
+                hash,
+                FileInfo {
+                    file_name: name.to_string(),
+                    file_size,
+                    modification_date,
+                    formatted_size: FileInfo::format_size(file_size),
+                    file_path: path.display().to_string(),
+                },
+            );
+        }
+    }
+
+    Ok(())
+}
+
+
+pub fn search_files(query: &str) -> Result<Vec<FileInfo>, String> {
+    if query.is_empty() {
+        return Err("Search query is empty".to_string());
+    }
+
+    let index = FILE_INDEX.lock().unwrap();
+    
+    // First try exact hash match
+    let query_hash = blake3::hash(query.to_lowercase().as_bytes()).to_hex().to_string();
+    if let Some(file) = index.get(&query_hash) {
+        return Ok(vec![file.clone()]);
+    }
+
+    // Otherwise do substring search
+    let query_lower = query.to_lowercase();
+    let result: Vec<FileInfo> = index
+        .values()
+        .filter(|file| file.file_name.to_lowercase().contains(&query_lower))
+        .cloned()
+        .collect();
+
+    Ok(result)
 }
 
 

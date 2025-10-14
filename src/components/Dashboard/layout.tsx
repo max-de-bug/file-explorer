@@ -27,196 +27,192 @@ const DashboardLayout = () => {
           </div>
         );
       case "grid":
-        {
-          // Determine which dataset to render based on current route
-          const path = location.pathname;
-          let items: Array<any> = [];
-          let title = "";
+        // Determine which dataset to render based on current route
+        const gridPath = location.pathname;
+        let gridItems: Array<any> = [];
+        let gridTitle = "";
 
-          if (path === "/" || path.toLowerCase() === "/disks") {
-            items = disks;
-            title = "Disks";
-          } else if (path.toLowerCase() === "/downloads") {
-            items = downloads;
-            title = "Downloads";
-          } else if (path.toLowerCase() === "/documents") {
-            items = documents;
-            title = "Documents";
-          } else if (path.toLowerCase() === "/pictures") {
-            items = pictures;
-            title = "Pictures";
-          }
-
-          return (
-            <div className={styles.gridView}>
-              {items && items.length > 0 ? (
-                items.map((item: any, idx: number) => {
-                  // Support disk cards and generic file cards
-                  const isDisk = item && typeof item === "object" && "name" in item && "formatted_total" in item;
-                  return (
-                    <div key={idx} className={styles.gridContent}>
-                      {isDisk ? (
-                        <>
-                          <h3>{item.name}</h3>
-                          <p>Type: {item.kind}</p>
-                          <p>Total: {item.formatted_total}</p>
-                          <p>Used: {item.formatted_used}</p>
-                          <p>Available: {item.formatted_available}</p>
-                        </>
-                      ) : (
-                        <>
-                          <h3>{item.file_name}</h3>
-                          {item.modification_date && (
-                            <p>Modified: {item.modification_date}</p>
-                          )}
-                          {item.formatted_size && (
-                            <p>Size: {item.formatted_size}</p>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  );
-                })
-              ) : (
-                <div className={styles.gridContent}>
-                  <h3>{title || "No items"}</h3>
-                  <p>No content available.</p>
-                </div>
-              )}
-            </div>
-          );
+        if (gridPath === "/" || gridPath.toLowerCase() === "/disks") {
+          gridItems = disks;
+          gridTitle = "Disks";
+        } else if (gridPath.toLowerCase() === "/downloads") {
+          gridItems = downloads;
+          gridTitle = "Downloads";
+        } else if (gridPath.toLowerCase() === "/documents") {
+          gridItems = documents;
+          gridTitle = "Documents";
+        } else if (gridPath.toLowerCase() === "/pictures") {
+          gridItems = pictures;
+          gridTitle = "Pictures";
         }
+
+        return (
+          <div className={styles.gridView}>
+            {gridItems && gridItems.length > 0 ? (
+              gridItems.map((item: any, idx: number) => {
+                // Support disk cards and generic file cards
+                const isDisk = item && typeof item === "object" && "name" in item && "formatted_total" in item;
+                return (
+                  <div key={idx} className={styles.gridContent}>
+                    {isDisk ? (
+                      <>
+                        <h3>{item.name}</h3>
+                        <p>Type: {item.kind}</p>
+                        <p>Total: {item.formatted_total}</p>
+                        <p>Used: {item.formatted_used}</p>
+                        <p>Available: {item.formatted_available}</p>
+                      </>
+                    ) : (
+                      <>
+                        <h3>{item.file_name}</h3>
+                        {item.modification_date && (
+                          <p>Modified: {item.modification_date}</p>
+                        )}
+                        {item.formatted_size && (
+                          <p>Size: {item.formatted_size}</p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })
+            ) : (
+              <div className={styles.gridContent}>
+                <h3>{gridTitle || "No items"}</h3>
+                <p>No content available.</p>
+              </div>
+            )}
+          </div>
+        );
       case "list":
-        {
-          // Determine which dataset to render based on current route
-          const path = location.pathname;
-          let items: Array<any> = [];
-          let title = "";
-          const LIST_THRESHOLD = 15; // Threshold for switching to two-column layout
+        // Determine which dataset to render based on current route
+        const listPath = location.pathname;
+        let listItems: Array<any> = [];
+        let listTitle = "";
+        const LIST_THRESHOLD = 15; // Threshold for switching to two-column layout
 
-          if (path === "/" || path.toLowerCase() === "/disks") {
-            items = disks;
-            title = "Disks";
-          } else if (path.toLowerCase() === "/downloads") {
-            items = downloads;
-            title = "Downloads";
-          } else if (path.toLowerCase() === "/documents") {
-            items = documents;
-            title = "Documents";
-          } else if (path.toLowerCase() === "/pictures") {
-            items = pictures;
-            title = "Pictures";
-          }
+        if (listPath === "/" || listPath.toLowerCase() === "/disks") {
+          listItems = disks;
+          listTitle = "Disks";
+        } else if (listPath.toLowerCase() === "/downloads") {
+          listItems = downloads;
+          listTitle = "Downloads";
+        } else if (listPath.toLowerCase() === "/documents") {
+          listItems = documents;
+          listTitle = "Documents";
+        } else if (listPath.toLowerCase() === "/pictures") {
+          listItems = pictures;
+          listTitle = "Pictures";
+        }
 
-          const renderTableHeader = () => {
-            // If first item looks like a disk, show disk columns; else show file columns
-            const sample = items?.[0];
-            const isDisk = sample && typeof sample === "object" && "name" in sample && "formatted_total" in sample;
-            if (isDisk) {
-              return (
-                <tr>
-                  <th scope="col">Name</th>
-                  <th scope="col">Type</th>
-                  <th scope="col">Total</th>
-                  <th scope="col">Used</th>
-                  <th scope="col">Available</th>
-                </tr>
-              );
-            }
+        const renderTableHeader = () => {
+          // If first item looks like a disk, show disk columns; else show file columns
+          const sample = listItems?.[0];
+          const isDisk = sample && typeof sample === "object" && "name" in sample && "formatted_total" in sample;
+          if (isDisk) {
             return (
               <tr>
                 <th scope="col">Name</th>
-                <th scope="col">Modified</th>
-                <th scope="col">Size</th>
+                <th scope="col">Type</th>
+                <th scope="col">Total</th>
+                <th scope="col">Used</th>
+                <th scope="col">Available</th>
               </tr>
             );
-          };
+          }
+          return (
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Modified</th>
+              <th scope="col">Size</th>
+            </tr>
+          );
+        };
 
-          const renderTableBody = () => {
-            if (!items || items.length === 0) {
+        const renderTableBody = () => {
+          if (!listItems || listItems.length === 0) {
+            return (
+              <tr className={styles.emptyRow}>
+                <td colSpan={5}>
+                  <div className={styles.emptyState}>
+                    <h4>{listTitle || "No items"}</h4>
+                    <p>No content available.</p>
+                  </div>
+                </td>
+              </tr>
+            );
+          }
+
+          return listItems.map((item: any, idx: number) => {
+            const isDisk = item && typeof item === "object" && "name" in item && "formatted_total" in item;
+            if (isDisk) {
               return (
-                <tr className={styles.emptyRow}>
-                  <td colSpan={5}>
-                    <div className={styles.emptyState}>
-                      <h4>{title || "No items"}</h4>
-                      <p>No content available.</p>
-                    </div>
-                  </td>
+                <tr key={`disk-${idx}`} className={styles.row}>
+                  <td>{item.name}</td>
+                  <td>{item.kind}</td>
+                  <td>{item.formatted_total}</td>
+                  <td>{item.formatted_used}</td>
+                  <td>{item.formatted_available}</td>
                 </tr>
               );
             }
 
-            return items.map((item: any, idx: number) => {
-              const isDisk = item && typeof item === "object" && "name" in item && "formatted_total" in item;
-              if (isDisk) {
-                return (
-                  <tr key={`disk-${idx}`} className={styles.row}>
-                    <td>{item.name}</td>
-                    <td>{item.kind}</td>
-                    <td>{item.formatted_total}</td>
-                    <td>{item.formatted_used}</td>
-                    <td>{item.formatted_available}</td>
-                  </tr>
-                );
-              }
-
-              return (
-                <tr key={`file-${idx}`} className={styles.row}>
-                  <td>{item.file_name}</td>
-                  <td>{item.modification_date || "—"}</td>
-                  <td>{item.formatted_size || "—"}</td>
-                </tr>
-              );
-            });
-          };
-
-          const renderTwoColumnLayout = () => {
             return (
-              <div className={styles.twoColumnGrid} role="region" aria-label={`${title} list`}>
-                {items.map((item: any, idx: number) => {
-                  const isDisk = item && typeof item === "object" && "name" in item && "formatted_total" in item;
-                  return (
-                    <div key={`item-${idx}`} className={styles.twoColumnCard}>
-                      {isDisk ? (
-                        <>
-                          <h4>{item.name}</h4>
-                          <p>Type: {item.kind}</p>
-                          <p>Total: {item.formatted_total}</p>
-                          <p>Used: {item.formatted_used}</p>
-                          <p>Available: {item.formatted_available}</p>
-                        </>
-                      ) : (
-                        <>
-                          <h4>{item.file_name}</h4>
-                          <p>Modified: {item.modification_date || "—"}</p>
-                          <p>Size: {item.formatted_size || "—"}</p>
-                        </>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+              <tr key={`file-${idx}`} className={styles.row}>
+                <td>{item.file_name}</td>
+                <td>{item.modification_date || "—"}</td>
+                <td>{item.formatted_size || "—"}</td>
+              </tr>
             );
-          };
+          });
+        };
 
+        const renderTwoColumnLayout = () => {
           return (
-            <div className={styles.listView}>
-              <div className={styles.listContent}>
-                <h3>{title || "List"}</h3>
-                {items.length > LIST_THRESHOLD ? (
-                  renderTwoColumnLayout()
-                ) : (
-                  <div className={styles.tableWrapper}>
-                    <table className={styles.listTable}>
-                      <thead>{renderTableHeader()}</thead>
-                      <tbody>{renderTableBody()}</tbody>
-                    </table>
+            <div className={styles.twoColumnGrid} role="region" aria-label={`${listTitle} list`}>
+              {listItems.map((item: any, idx: number) => {
+                const isDisk = item && typeof item === "object" && "name" in item && "formatted_total" in item;
+                return (
+                  <div key={`item-${idx}`} className={styles.twoColumnCard}>
+                    {isDisk ? (
+                      <>
+                        <h4>{item.name}</h4>
+                        <p>Type: {item.kind}</p>
+                        <p>Total: {item.formatted_total}</p>
+                        <p>Used: {item.formatted_used}</p>
+                        <p>Available: {item.formatted_available}</p>
+                      </>
+                    ) : (
+                      <>
+                        <h4>{item.file_name}</h4>
+                        <p>Modified: {item.modification_date || "—"}</p>
+                        <p>Size: {item.formatted_size || "—"}</p>
+                      </>
+                    )}
                   </div>
-                )}
-              </div>
+                );
+              })}
             </div>
           );
-        }
+        };
+
+        return (
+          <div className={styles.listView}>
+            <div className={styles.listContent}>
+              <h3>{listTitle || "List"}</h3>
+              {listItems.length > LIST_THRESHOLD ? (
+                renderTwoColumnLayout()
+              ) : (
+                <div className={styles.tableWrapper}>
+                  <table className={styles.listTable}>
+                    <thead>{renderTableHeader()}</thead>
+                    <tbody>{renderTableBody()}</tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        );
       case "normal":
       default:
         return (
