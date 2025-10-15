@@ -298,7 +298,7 @@ pub fn build_index() -> Result<(), String> {
     Ok(())
 }
 
-
+#[command]
 pub fn search_files(query: &str) -> Result<Vec<FileInfo>, String> {
     if query.is_empty() {
         return Err("Search query is empty".to_string());
@@ -328,7 +328,7 @@ pub fn search_files(query: &str) -> Result<Vec<FileInfo>, String> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .invoke_handler(tauri::generate_handler![list_disks, list_downloads, list_documents, list_pictures]) // Add list_downloads here
+        .invoke_handler(tauri::generate_handler![list_disks, list_downloads, list_documents, list_pictures, search_files]) // Add list_downloads here
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

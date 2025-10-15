@@ -2,10 +2,10 @@ import { useContext } from "react";
 import styles from "./Header.module.scss";
 import { AppContext } from "../../context/Context";
 import { Home, ArrowLeft } from "lucide-react";
+import Searchbar from "../SearchBar/Searchbar";
 
 const Header = () => {
-  const { handleBack, handleHome, handleSearch, searchValue } =
-    useContext(AppContext);
+  const { handleBack, handleHome } = useContext(AppContext);
 
   return (
     <div className={styles.container}>
@@ -25,15 +25,7 @@ const Header = () => {
           <ArrowLeft size={18} />
         </button>
       </div>
-      <div className={styles.searchContainer}>
-        <input
-          type="text"
-          placeholder="Search..."
-          value={searchValue}
-          onChange={handleSearch}
-          className={styles.searchInput}
-        />
-      </div>
+      <Searchbar />
     </div>
   );
 };
