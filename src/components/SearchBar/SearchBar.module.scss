@@ -1,9 +1,91 @@
 .searchContainer {
+  position: relative;
   justify-content: flex-end;
+  width: 100%;
 }
 
 .searchInput {
-  padding: 8px;
+  padding: 8px 12px;
   font-size: 14px;
   width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.2s;
+
+  &:focus {
+    border-color: #4a90e2;
+  }
+}
+
+.searchResults {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.resultsHeader {
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  border-bottom: 1px solid #eee;
+  background: #f8f9fa;
+}
+
+.resultsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.resultItem {
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #f5f8ff;
+  }
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.fileName {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+
+.fileInfo {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: #666;
+}
+
+.fileSize,
+.fileDate {
+  display: inline-block;
+}
+
+.noResults {
+  padding: 20px;
+  text-align: center;
+  color: #999;
+  font-size: 14px;
 }

@@ -1,47 +1,15 @@
-use std::{fs, time::UNIX_EPOCH};
+use std::{collections::HashMap, fs, sync::Arc, time::UNIX_EPOCH};
 use chrono::{DateTime, Utc};
 use tauri::command;
 use dirs_next::{home_dir, picture_dir, document_dir};
 use sysinfo::Disks;
 use once_cell::sync::Lazy;
 use blake3;
-use std::collections::HashMap;
-use std::sync::Mutex;
+use rayon::prelude::*;
+use arc_swap::ArcSwap;
 
-
-static FILE_INDEX: Lazy<Mutex<HashMap<String, FileInfo>>> = Lazy::new(|| Mutex::new(HashMap::new()));
-
-#[derive(serde::Serialize, serde::Deserialize)]
-#[derive(Debug)]
-pub struct DiskInfo {
-    pub name: String,
-    pub kind: String,
-    pub total_space: u64,
-    pub available_space: u64,
-    pub used_space: u64,
-    pub formatted_total: String,
-    pub formatted_available: String,
-    pub formatted_used: String,
-}
-
-impl DiskInfo {
-    pub fn new(disk: &sysinfo::Disk) -> Self {
-        let total = disk.total_space();
-        let available = disk.available_space();
-        let used = total - available;
-        
-        Self {
-            name: disk.name().to_string_lossy().to_string(),
-            kind: format!("{:?}", disk.kind()),
-            total_space: total,
-            available_space: available,
-            used_space: used,
-            formatted_total: FileInfo::format_size(total),
-            formatted_available: FileInfo::format_size(available),
-            formatted_used: FileInfo::format_size(used),
-        }
-    }
-}
+static FILE_INDEX: Lazy<ArcSwap<HashMap<String, FileInfo>>> =
+    Lazy::new(|| ArcSwap::new(Arc::new(HashMap::new())));
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub struct FileInfo {
@@ -50,16 +18,19 @@ pub struct FileInfo {
     pub modification_date: String,
     pub formatted_size: String,
     pub file_path: String,
+    pub lower_name: String, // precomputed lowercase name for faster search
 }
 
 impl FileInfo {
     pub fn new(file_name: String, file_size: u64, modification_date: String, file_path: String) -> Self {
+        let lower_name = file_name.to_lowercase();
         Self {
             file_name,
             file_size,
             modification_date,
             formatted_size: Self::format_size(file_size),
             file_path,
+            lower_name,
         }
     }
 
@@ -78,8 +49,121 @@ impl FileInfo {
         }
     }
 }
-// List all disks on the system
+
+// ------------------- Async-safe, parallel build_index -------------------
+
 #[tauri::command]
+async fn build_index() -> Result<(), String> {
+    let new_index = tokio::task::spawn_blocking(|| {
+        let search_dir = "./";
+        let entries: Vec<_> = fs::read_dir(search_dir)
+            .map_err(|e| e.to_string())?
+            .filter_map(Result::ok)
+            .collect();
+
+        // Parallel iteration using rayon
+        let map: HashMap<_, _> = entries.par_iter()
+            .filter_map(|entry| {
+                let path = entry.path();
+                let name = path.file_name()?.to_str()?.to_string();
+
+                let metadata = entry.metadata().ok()?;
+                let file_size = metadata.len();
+
+                let modification_date = metadata.modified().ok()
+                    .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+                    .map(|d| DateTime::<Utc>::from_timestamp(d.as_secs() as i64, 0).to_rfc3339())
+                    .unwrap_or_else(|| "Unknown".to_string());
+
+                let lower_name = name.to_lowercase();
+                let hash = blake3::hash(lower_name.as_bytes()).to_hex().to_string();
+
+                Some((hash, FileInfo {
+                    file_name: name,
+                    file_size,
+                    modification_date,
+                    formatted_size: FileInfo::format_size(file_size),
+                    file_path: path.display().to_string(),
+                    lower_name,
+                }))
+            })
+            .collect();
+
+        Ok::<_, String>(map)
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+
+    // Atomic swap
+    FILE_INDEX.store(Arc::new(new_index));
+
+    Ok(())
+}
+
+// ------------------- Async-safe search_files -------------------
+
+#[tauri::command]
+async fn search_files(query: String) -> Result<Vec<FileInfo>, String> {
+    if query.trim().is_empty() {
+        return Ok(vec![]);
+    }
+
+    let query_lower = query.to_lowercase();
+    let query_hash = blake3::hash(query_lower.as_bytes()).to_hex().to_string();
+    let index_snapshot = FILE_INDEX.load_full();
+
+    let results = tokio::task::spawn_blocking(move || {
+        // Exact hash match first
+        if let Some(file) = index_snapshot.get(&query_hash) {
+            return vec![file.clone()];
+        }
+
+        // Otherwise substring search
+        index_snapshot.values()
+            .filter(|f| f.lower_name.contains(&query_lower))
+            .cloned()
+            .collect::<Vec<_>>()
+    })
+    .await
+    .map_err(|e| e.to_string())?;
+
+    Ok(results)
+}
+
+// ------------------- Disk & folder commands (unchanged) -------------------
+
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+pub struct DiskInfo {
+    pub name: String,
+    pub kind: String,
+    pub total_space: u64,
+    pub available_space: u64,
+    pub used_space: u64,
+    pub formatted_total: String,
+    pub formatted_available: String,
+    pub formatted_used: String,
+}
+
+impl DiskInfo {
+    pub fn new(disk: &sysinfo::Disk) -> Self {
+        let total = disk.total_space();
+        let available = disk.available_space();
+        let used = total - available;
+
+        Self {
+            name: disk.name().to_string_lossy().to_string(),
+            kind: format!("{:?}", disk.kind()),
+            total_space: total,
+            available_space: available,
+            used_space: used,
+            formatted_total: FileInfo::format_size(total),
+            formatted_available: FileInfo::format_size(available),
+            formatted_used: FileInfo::format_size(used),
+        }
+    }
+}
+
+#[command]
 fn list_disks() -> Vec<DiskInfo> {
     let disks = Disks::new_with_refreshed_list();
     let mut disk_info = Vec::new();
@@ -89,53 +173,34 @@ fn list_disks() -> Vec<DiskInfo> {
     disk_info
 }
 
-// List files in the user's Pictures folder
 #[command]
-fn list_pictures() -> Result<Vec<FileInfo>, String> {
-    // Get the Pictures folder path using the dirs_next crate
-    let pictures_dir = picture_dir().ok_or_else(|| "Could not determine Pictures directory".to_string())?;
+ fn list_pictures() -> Result<Vec<FileInfo>, String> {
+    let pictures_dir = picture_dir().ok_or("Could not determine Pictures directory".to_string())?;
 
-    // Check if the Pictures folder exists and is a directory
-    if !pictures_dir.exists() {
-        return Err(format!("Pictures folder not found: {:?}", pictures_dir));
+    if !pictures_dir.exists() || !pictures_dir.is_dir() {
+        return Err(format!("Pictures folder not found or invalid: {:?}", pictures_dir));
     }
-    if !pictures_dir.is_dir() {
-        return Err(format!("Path is not a directory: {:?}", pictures_dir));
-    }
-
-    // Read the contents of the Pictures directory
-    let entries = fs::read_dir(&pictures_dir).map_err(|e| {
-        format!("Failed to read the Pictures folder: {:?}", e)
-    })?;
 
     let mut files_info = Vec::new();
-
-    // Iterate over the directory entries and collect file info
-    for entry in entries {
+    for entry in fs::read_dir(&pictures_dir).map_err(|e| format!("Failed to read Pictures folder: {:?}", e))? {
         if let Ok(entry) = entry {
-            let file_name = entry.file_name().to_string_lossy().into_owned();
-            let file_path = entry.path().to_string_lossy().into_owned();
-
+            let file_path = entry.path();
+            let file_name = file_path.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string();
             if let Ok(metadata) = entry.metadata() {
                 let file_size = metadata.len();
+                let modification_date = metadata.modified()
+                    .ok()
+                    .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+                    .map(|d| DateTime::<Utc>::from_timestamp(d.as_secs() as i64, 0).to_rfc3339())
+                    .unwrap_or_else(|| "Unknown".to_string());
 
-                // Get the modification date
-                let modification_date = match metadata.modified() {
-                    Ok(time) => {
-                        let duration_since_epoch = time.duration_since(UNIX_EPOCH).unwrap_or_default();
-                        let datetime = DateTime::<Utc>::from_timestamp(duration_since_epoch.as_secs() as i64, 0);
-                        datetime.map_or("Unknown".to_string(), |dt| dt.to_rfc3339())
-                    }
-                    Err(_) => "Unknown".to_string(),
-                };
-
-                // Add the file info to the result
                 files_info.push(FileInfo {
                     file_name,
                     file_size,
                     modification_date,
                     formatted_size: FileInfo::format_size(file_size),
-                    file_path,
+                    file_path: file_path.display().to_string(),
+                    lower_name: file_name.to_lowercase(),
                 });
             }
         }
@@ -145,109 +210,35 @@ fn list_pictures() -> Result<Vec<FileInfo>, String> {
 }
 
 #[command]
-fn list_downloads() -> Result<Vec<FileInfo>, String> {
-    // Get the user's home directory
-    let home_dir = home_dir().ok_or_else(|| "Could not determine home directory".to_string())?;
+ fn list_downloads() -> Result<Vec<FileInfo>, String> {
+    let downloads_dir = home_dir()
+        .ok_or("Could not determine home directory".to_string())?
+        .join("Downloads");
 
-    // Construct the Downloads folder path
-    let downloads_dir = home_dir.join("Downloads");
-
-    // Check if the Downloads folder exists and is a directory
-    if !downloads_dir.exists() {
-        return Err(format!("Downloads folder not found: {:?}", downloads_dir));
+    if !downloads_dir.exists() || !downloads_dir.is_dir() {
+        return Err(format!("Downloads folder not found or invalid: {:?}", downloads_dir));
     }
-    if !downloads_dir.is_dir() {
-        return Err(format!("Path is not a directory: {:?}", downloads_dir));
-    }
-
-    // Read the contents of the Downloads directory
-    let entries = fs::read_dir(&downloads_dir).map_err(|e| {
-        format!("Failed to read the Downloads folder: {:?}", e)
-    })?;
 
     let mut files_info = Vec::new();
-    // Iterate over the directory entries and collect file info
-    for entry in entries {
+    for entry in fs::read_dir(&downloads_dir).map_err(|e| format!("Failed to read Downloads folder: {:?}", e))? {
         if let Ok(entry) = entry {
-            let file_name = entry.file_name().to_string_lossy().into_owned();
-            let file_path = entry.path().to_string_lossy().into_owned();
-            
+            let file_path = entry.path();
+            let file_name = file_path.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string();
             if let Ok(metadata) = entry.metadata() {
-                // Get the file size
                 let file_size = metadata.len();
-                
-                // Get the last modification time
-                let modification_time = metadata.modified().ok();
-                let modification_date = modification_time
-                    .and_then(|time| time.duration_since(UNIX_EPOCH).ok())
-                    .map_or_else(
-                        || "Unknown".to_string(), // Default to "Unknown" if None
-                        |duration| {
-                            let utc_datetime = DateTime::<Utc>::from_timestamp(duration.as_secs() as i64, 0);
-                            utc_datetime.expect("Reason").to_rfc3339() // Format the DateTime as RFC3339
-                        }
-                    );
+                let modification_date = metadata.modified()
+                    .ok()
+                    .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+                    .map(|d| DateTime::<Utc>::from_timestamp(d.as_secs() as i64, 0).to_rfc3339())
+                    .unwrap_or_else(|| "Unknown".to_string());
 
-                // Add the file info to the result
                 files_info.push(FileInfo {
                     file_name,
                     file_size,
                     modification_date,
                     formatted_size: FileInfo::format_size(file_size),
-                    file_path,
-                });
-            }
-        }
-    }
-
-    Ok(files_info)
-}
-#[command]
-fn list_documents() -> Result<Vec<FileInfo>, String> {
-    // Get the Documents folder path using the dirs_next crate
-    let documents_dir = document_dir().ok_or_else(|| "Could not determine Documents directory".to_string())?;
-
-    // Check if the Documents folder exists and is a directory
-    if !documents_dir.exists() {
-        return Err(format!("Documents folder not found: {:?}", documents_dir));
-    }
-    if !documents_dir.is_dir() {
-        return Err(format!("Path is not a directory: {:?}", documents_dir));
-    }
-
-    // Read the contents of the Documents directory
-    let entries = fs::read_dir(&documents_dir).map_err(|e| {
-        format!("Failed to read the Documents folder: {:?}", e)
-    })?;
-
-    let mut files_info = Vec::new();
-
-    // Iterate over the directory entries and collect file info
-    for entry in entries {
-        if let Ok(entry) = entry {
-            let file_name = entry.file_name().to_string_lossy().into_owned();
-            let file_path = entry.path().to_string_lossy().into_owned();
-
-            if let Ok(metadata) = entry.metadata() {
-                let file_size = metadata.len();
-
-                // Get the modification date
-                let modification_date = match metadata.modified() {
-                    Ok(time) => {
-                        let duration_since_epoch = time.duration_since(UNIX_EPOCH).unwrap_or_default();
-                        let datetime = DateTime::<Utc>::from_timestamp(duration_since_epoch.as_secs() as i64, 0);
-                        datetime.map_or("Unknown".to_string(), |dt| dt.to_rfc3339())
-                    }
-                    Err(_) => "Unknown".to_string(),
-                };
-
-                // Add the file info to the result
-                files_info.push(FileInfo {
-                    file_name,
-                    file_size,
-                    modification_date,
-                    formatted_size: FileInfo::format_size(file_size),
-                    file_path,
+                    file_path: file_path.display().to_string(),
+                    lower_name: file_name.to_lowercase(),
                 });
             }
         }
@@ -256,79 +247,58 @@ fn list_documents() -> Result<Vec<FileInfo>, String> {
     Ok(files_info)
 }
 
-pub fn build_index() -> Result<(), String> {
-    let mut index = FILE_INDEX.lock().unwrap();
-    index.clear();
+#[command]
+ fn list_documents() -> Result<Vec<FileInfo>, String> {
+    let documents_dir = document_dir().ok_or("Could not determine Documents directory".to_string())?;
 
-    let search_dir = "./";
-    for entry in fs::read_dir(search_dir).map_err(|e| e.to_string())? {
-        let entry = entry.map_err(|e| e.to_string())?;
-        let path = entry.path();
+    if !documents_dir.exists() || !documents_dir.is_dir() {
+        return Err(format!("Documents folder not found or invalid: {:?}", documents_dir));
+    }
 
-        if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-            // Get metadata for file size and modification date
-            let metadata = entry.metadata().map_err(|e| e.to_string())?;
-            let file_size = metadata.len();
-            
-            let modification_date = match metadata.modified() {
-                Ok(time) => {
-                    let duration_since_epoch = time.duration_since(UNIX_EPOCH).unwrap_or_default();
-                    let datetime = DateTime::<Utc>::from_timestamp(duration_since_epoch.as_secs() as i64, 0);
-                    datetime.map_or("Unknown".to_string(), |dt| dt.to_rfc3339())
-                }
-                Err(_) => "Unknown".to_string(),
-            };
+    let mut files_info = Vec::new();
+    for entry in fs::read_dir(&documents_dir).map_err(|e| format!("Failed to read Documents folder: {:?}", e))? {
+        if let Ok(entry) = entry {
+            let file_path = entry.path();
+            let file_name = file_path.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string();
+            if let Ok(metadata) = entry.metadata() {
+                let file_size = metadata.len();
+                let modification_date = metadata.modified()
+                    .ok()
+                    .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+                    .map(|d| DateTime::<Utc>::from_timestamp(d.as_secs() as i64, 0).to_rfc3339())
+                    .unwrap_or_else(|| "Unknown".to_string());
 
-            // Compute hash of lowercase filename
-            let hash = blake3::hash(name.to_lowercase().as_bytes()).to_hex().to_string();
-
-            index.insert(
-                hash,
-                FileInfo {
-                    file_name: name.to_string(),
+                files_info.push(FileInfo {
+                    file_name,
                     file_size,
                     modification_date,
                     formatted_size: FileInfo::format_size(file_size),
-                    file_path: path.display().to_string(),
-                },
-            );
+                    file_path: file_path.display().to_string(),
+                    lower_name: file_name.to_lowercase(),
+                });
+            }
         }
     }
 
-    Ok(())
+    Ok(files_info)
 }
+// You can keep your list_pictures, list_downloads, list_documents commands as before
+// They don’t need modifications for ArcSwap
 
-#[command]
-pub fn search_files(query: &str) -> Result<Vec<FileInfo>, String> {
-    if query.is_empty() {
-        return Err("Search query is empty".to_string());
-    }
-
-    let index = FILE_INDEX.lock().unwrap();
-    
-    // First try exact hash match
-    let query_hash = blake3::hash(query.to_lowercase().as_bytes()).to_hex().to_string();
-    if let Some(file) = index.get(&query_hash) {
-        return Ok(vec![file.clone()]);
-    }
-
-    // Otherwise do substring search
-    let query_lower = query.to_lowercase();
-    let result: Vec<FileInfo> = index
-        .values()
-        .filter(|file| file.file_name.to_lowercase().contains(&query_lower))
-        .cloned()
-        .collect();
-
-    Ok(result)
-}
-
+// ------------------- Tauri run -------------------
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .invoke_handler(tauri::generate_handler![list_disks, list_downloads, list_documents, list_pictures, search_files]) // Add list_downloads here
+        .invoke_handler(tauri::generate_handler![
+            list_disks,
+            list_downloads,
+            list_documents,
+            list_pictures,
+            search_files,
+            build_index
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

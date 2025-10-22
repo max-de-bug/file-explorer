@@ -9,7 +9,8 @@ import {
   useMemo,
 } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { ViewMode, } from "../types/viewMode";
+import { debounce } from "lodash";
+import { ViewMode } from "../types/viewMode";
 
 // FileInfo type definition
 interface FileInfo {
@@ -44,12 +45,15 @@ interface AppContextType {
   fetchDocuments: () => Promise<void>;
   handleBack: () => void;
   handleHome: () => void;
-  searchValue: string;
-  handleSearch: (event: ChangeEvent<HTMLInputElement>) => void;
   currentDirectory: string;
   handleCurrentDirectory: (event: ChangeEvent<HTMLInputElement>) => void;
   setCurrentDirectory: (directory: string | ((prev: string) => string)) => void;
   viewMode: ViewMode;
+  searchValue: string;
+  setSearchValue: (value: string | ((prev: string) => string)) => void;
+  handleSearch: (e: ChangeEvent<HTMLInputElement>) => void;
+  searchResults: FileInfo[];
+  isSearching: boolean;
   setViewMode: (mode: ViewMode) => void;
 }
 
@@ -106,23 +110,26 @@ export const AppContext = createContext<AppContextType>({
   fetchPictures: async () => {},
   handleBack: () => {},
   handleHome: () => {},
-  searchValue: "",
-  handleSearch: () => {},
   currentDirectory: "",
   handleCurrentDirectory: () => {},
   setCurrentDirectory: () => {},
-  viewMode: 'normal' as ViewMode,
-
+  viewMode: "normal" as ViewMode,
   setViewMode: () => {},
-
+  searchValue: "",
+  setSearchValue: () => {},
+  handleSearch: () => {},
+  searchResults: [],
+  isSearching: false,
 });
 
 // Provider component
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
-  const [searchValue, setSearchValue] = useState<string>("");
   const [previousDirectory, setPreviousDirectory] = useState<string>("");
-  const [viewMode, setViewMode] = useState<ViewMode>('normal');
+  const [viewMode, setViewMode] = useState<ViewMode>("normal");
+  const [searchValue, setSearchValue] = useState<string>("");
+  const [searchResults, setSearchResults] = useState<FileInfo[]>([]);
+  const [isSearching, setIsSearching] = useState<boolean>(false);
   const navigate = useNavigate();
 
   // API utility function to invoke Tauri commands
@@ -134,6 +141,69 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       throw error;
     }
   };
+
+  // error with search bar, when typing in it
+  const performSearch = async (query: string) => {
+    if (query.trim() === "") {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const results: FileInfo[] = await invoke("search_files", {
+        query: query,
+      });
+      setSearchResults(results);
+    } catch (error) {
+      console.error("Error searching files:", error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Debounced version of performSearch
+  const debouncedSearch = useMemo(
+    () => debounce((q: string) => performSearch(q), 300),
+    [performSearch]
+  );
+
+  // Handle search input change
+  const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchValue(value); // Update immediately so input works!
+
+    if (value.trim() === "") {
+      setSearchResults([]);
+      setIsSearching(false);
+      debouncedSearch.cancel(); // Cancel any pending searches
+      return;
+    }
+
+    debouncedSearch(value); // Debounced API call
+  };
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
+
+  // Build index on component mount
+  useEffect(() => {
+    const buildIndex = async () => {
+      try {
+        await invoke("build_index");
+        console.log("File index built successfully");
+      } catch (error) {
+        console.error("Error building index:", error);
+      }
+    };
+    buildIndex();
+  }, []);
 
   // Fetch disks from backend
   const fetchDisks = async () => {
@@ -152,7 +222,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const result = (await invokeTauriCommand("list_documents")) as FileInfo[];
     dispatch({ type: "SET_DOCUMENTS", payload: result });
   };
-  
+
   // Fetch pictures from backend
   const fetchPictures = async () => {
     const result = (await invokeTauriCommand("list_pictures")) as FileInfo[];
@@ -186,12 +256,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Handle search value change
-  const handleSearch = (event: ChangeEvent<HTMLInputElement>) => {
-    setSearchValue(event.target.value);
-    console.log("Search Value:", event.target.value);
-  };
-
   // Handle current directory change
   const handleCurrentDirectory = (event: ChangeEvent<HTMLInputElement>) => {
     const directory = event.target.value.trim();
@@ -207,9 +271,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     });
     console.log("Current Directory:", newDirectory);
   };
-
-
-
 
   // Fetch initial data on mount
   useEffect(() => {
@@ -232,9 +293,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       fetchDocuments,
       handleBack,
       handleHome,
-      searchValue,
-      handleSearch,
       handleCurrentDirectory,
+      setSearchValue,
       currentDirectory: state.currentDirectory,
       setCurrentDirectory: (directory: string | ((prev: string) => string)) =>
         dispatch({
@@ -246,14 +306,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         }),
       viewMode,
       setViewMode,
-
+      searchValue,
+      handleSearch,
+      searchResults,
+      isSearching,
     }),
     [
       state.disks,
       state.downloads,
       state.documents,
       state.currentDirectory,
-      searchValue,
       viewMode,
     ]
   );
