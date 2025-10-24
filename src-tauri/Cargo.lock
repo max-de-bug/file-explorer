@@ -840,6 +840,7 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-shell",
  "tokio",
+ "walkdir",
 ]
 
 [[package]]

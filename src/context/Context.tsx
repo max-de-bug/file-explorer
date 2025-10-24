@@ -7,12 +7,14 @@ import {
   ReactNode,
   ChangeEvent,
   useMemo,
+  useCallback,
 } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { debounce } from "lodash";
 import { ViewMode } from "../types/viewMode";
 
-// FileInfo type definition
+// -------------------- Types --------------------
+
 interface FileInfo {
   file_name: string;
   file_size: number;
@@ -21,7 +23,6 @@ interface FileInfo {
   image?: string;
 }
 
-// DiskInfo type definition
 interface DiskInfo {
   name: string;
   kind: string;
@@ -33,7 +34,6 @@ interface DiskInfo {
   formatted_used: string;
 }
 
-// AppContextType for type safety
 interface AppContextType {
   disks: DiskInfo[];
   fetchDisks: () => Promise<void>;
@@ -57,7 +57,8 @@ interface AppContextType {
   setViewMode: (mode: ViewMode) => void;
 }
 
-// Reducer for managing state
+// -------------------- Reducer --------------------
+
 type State = {
   disks: DiskInfo[];
   downloads: FileInfo[];
@@ -98,7 +99,8 @@ const reducer = (state: State, action: Action): State => {
   }
 };
 
-// Context with default values
+// -------------------- Context --------------------
+
 export const AppContext = createContext<AppContextType>({
   disks: [],
   fetchDisks: async () => {},
@@ -122,7 +124,8 @@ export const AppContext = createContext<AppContextType>({
   isSearching: false,
 });
 
-// Provider component
+// -------------------- Provider --------------------
+
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [previousDirectory, setPreviousDirectory] = useState<string>("");
@@ -132,18 +135,23 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const navigate = useNavigate();
 
-  // API utility function to invoke Tauri commands
-  const invokeTauriCommand = async (command: string): Promise<any> => {
-    try {
-      return await invoke(command);
-    } catch (error) {
-      console.error(`Error invoking ${command}:`, error);
-      throw error;
-    }
-  };
+  // -------------------- Helpers --------------------
 
-  // error with search bar, when typing in it
-  const performSearch = async (query: string) => {
+  const invokeTauriCommand = useCallback(
+    async (command: string): Promise<any> => {
+      try {
+        return await invoke(command);
+      } catch (error) {
+        console.error(`Error invoking ${command}:`, error);
+        throw error;
+      }
+    },
+    []
+  );
+
+  // -------------------- Search --------------------
+
+  const performSearch = useCallback(async (query: string) => {
     if (query.trim() === "") {
       setSearchResults([]);
       setIsSearching(false);
@@ -152,9 +160,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     setIsSearching(true);
     try {
-      const results: FileInfo[] = await invoke("search_files", {
-        query: query,
-      });
+      const results: FileInfo[] = await invoke("search_files", { query });
       setSearchResults(results);
     } catch (error) {
       console.error("Error searching files:", error);
@@ -162,75 +168,39 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setIsSearching(false);
     }
-  };
+  }, []);
 
-  // Debounced version of performSearch
   const debouncedSearch = useMemo(
     () => debounce((q: string) => performSearch(q), 300),
     [performSearch]
   );
 
-  // Handle search input change
-  const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchValue(value); // Update immediately so input works!
+  const handleSearch = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      setSearchValue(value);
 
-    if (value.trim() === "") {
-      setSearchResults([]);
-      setIsSearching(false);
-      debouncedSearch.cancel(); // Cancel any pending searches
-      return;
-    }
-
-    debouncedSearch(value); // Debounced API call
-  };
-
-  // Cleanup debounce on unmount
-  useEffect(() => {
-    return () => {
-      debouncedSearch.cancel();
-    };
-  }, [debouncedSearch]);
-
-  // Build index on component mount
-  useEffect(() => {
-    const buildIndex = async () => {
-      try {
-        await invoke("build_index");
-        console.log("File index built successfully");
-      } catch (error) {
-        console.error("Error building index:", error);
+      if (value.trim() === "") {
+        setSearchResults([]);
+        setIsSearching(false);
+        debouncedSearch.cancel();
+        return;
       }
-    };
-    buildIndex();
-  }, []);
 
-  // Fetch disks from backend
-  const fetchDisks = async () => {
-    const result = (await invokeTauriCommand("list_disks")) as DiskInfo[];
-    dispatch({ type: "SET_DISKS", payload: result });
-  };
+      debouncedSearch(value);
+    },
+    [debouncedSearch]
+  );
 
-  // Fetch downloads from backend
-  const fetchDownloads = async () => {
-    const result = (await invokeTauriCommand("list_downloads")) as FileInfo[];
-    dispatch({ type: "SET_DOWNLOADS", payload: result });
-  };
+  // useEffect(() => {
+  //   return () => {
+  //     debouncedSearch.cancel();
+  //   };
+  // }, [debouncedSearch]);
 
-  // Fetch documents from backend
-  const fetchDocuments = async () => {
-    const result = (await invokeTauriCommand("list_documents")) as FileInfo[];
-    dispatch({ type: "SET_DOCUMENTS", payload: result });
-  };
+  // -------------------- Directory Management --------------------
 
-  // Fetch pictures from backend
-  const fetchPictures = async () => {
-    const result = (await invokeTauriCommand("list_pictures")) as FileInfo[];
-    dispatch({ type: "SET_PICTURES", payload: result });
-  };
-
-  // Handle back navigation
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     if (state.currentDirectory === "/" || previousDirectory === "") {
       console.log("Already at root directory or no previous directory.");
       return;
@@ -245,42 +215,78 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setPreviousDirectory(newPreviousDirectory);
     dispatch({ type: "SET_CURRENT_DIRECTORY", payload: newPreviousDirectory });
     navigate(newPreviousDirectory);
-  };
+  }, [state.currentDirectory, previousDirectory, navigate]);
 
-  // Handle home navigation
-  const handleHome = () => {
+  const handleHome = useCallback(() => {
     if (state.currentDirectory !== "/") {
       setPreviousDirectory(state.currentDirectory);
       dispatch({ type: "SET_CURRENT_DIRECTORY", payload: "/" });
       navigate("/");
     }
-  };
+  }, [state.currentDirectory, navigate]);
 
-  // Handle current directory change
-  const handleCurrentDirectory = (event: ChangeEvent<HTMLInputElement>) => {
-    const directory = event.target.value.trim();
-    const newDirectory =
-      directory === ""
-        ? "/"
-        : directory.startsWith("/")
-        ? directory
-        : `/${directory}`;
-    dispatch({
-      type: "SET_CURRENT_DIRECTORY",
-      payload: newDirectory,
-    });
-    console.log("Current Directory:", newDirectory);
-  };
+  const handleCurrentDirectory = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const directory = event.target.value.trim();
+      const newDirectory =
+        directory === ""
+          ? "/"
+          : directory.startsWith("/")
+          ? directory
+          : `/${directory}`;
+      dispatch({
+        type: "SET_CURRENT_DIRECTORY",
+        payload: newDirectory,
+      });
+      console.log("Current Directory:", newDirectory);
+    },
+    []
+  );
 
-  // Fetch initial data on mount
+  // -------------------- Fetch Data --------------------
+
+  const fetchDisks = useCallback(async () => {
+    const result = (await invokeTauriCommand("list_disks")) as DiskInfo[];
+    dispatch({ type: "SET_DISKS", payload: result });
+  }, [invokeTauriCommand]);
+
+  const fetchDownloads = useCallback(async () => {
+    const result = (await invokeTauriCommand("list_downloads")) as FileInfo[];
+    dispatch({ type: "SET_DOWNLOADS", payload: result });
+  }, [invokeTauriCommand]);
+
+  const fetchDocuments = useCallback(async () => {
+    const result = (await invokeTauriCommand("list_documents")) as FileInfo[];
+    dispatch({ type: "SET_DOCUMENTS", payload: result });
+  }, [invokeTauriCommand]);
+
+  const fetchPictures = useCallback(async () => {
+    const result = (await invokeTauriCommand("list_pictures")) as FileInfo[];
+    dispatch({ type: "SET_PICTURES", payload: result });
+  }, [invokeTauriCommand]);
+
+  // -------------------- Lifecycle --------------------
+
+  useEffect(() => {
+    (async () => {
+      try {
+        await invoke("build_index");
+        console.log("File index built successfully");
+      } catch (error) {
+        console.error("Error building index:", error);
+      }
+    })();
+  }, []);
+
   useEffect(() => {
     fetchDisks();
     fetchDownloads();
     fetchDocuments();
     fetchPictures();
-  }, []);
+  }, [fetchDisks, fetchDownloads, fetchDocuments, fetchPictures]);
 
-  // Memoize context value to prevent unnecessary re-renders
+  // -------------------- Context Value --------------------
+
   const contextValue = useMemo(
     () => ({
       disks: state.disks,
@@ -316,7 +322,19 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       state.downloads,
       state.documents,
       state.currentDirectory,
+      state.pictures,
       viewMode,
+      searchValue,
+      searchResults,
+      isSearching,
+      fetchDisks,
+      fetchDownloads,
+      fetchDocuments,
+      fetchPictures,
+      handleBack,
+      handleHome,
+      handleCurrentDirectory,
+      handleSearch,
     ]
   );
 

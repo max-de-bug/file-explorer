@@ -7,6 +7,7 @@ use rayon::prelude::*;
 use std::{collections::HashMap, fs, sync::Arc, time::UNIX_EPOCH};
 use sysinfo::Disks;
 use tauri::command;
+use walkdir::WalkDir;
 
 static FILE_INDEX: Lazy<ArcSwap<HashMap<String, Arc<FileInfo>>>> =
     Lazy::new(|| ArcSwap::new(Arc::new(HashMap::new())));
@@ -87,55 +88,63 @@ impl DiskInfo {
 }
 
 // ------------------- Async-safe, parallel build_index -------------------
-
 #[tauri::command]
 async fn build_index() -> Result<(), String> {
     let new_index = tokio::task::spawn_blocking(|| {
-        let search_dir = "./";
-        let entries: Vec<_> = fs::read_dir(search_dir)
-            .map_err(|e| e.to_string())?
-            .filter_map(Result::ok)
-            .collect();
+        let disks = Disks::new_with_refreshed_list();
+        let mut combined_map = HashMap::new();
 
-        // Parallel iteration using rayon
-        let map: HashMap<_, _> = entries
-            .par_iter()
-            .filter_map(|entry| {
-                let path = entry.path();
-                let name = path.file_name()?.to_str()?.to_string();
+        for disk in disks.list() {
+            let root = disk.mount_point();
 
-                let metadata = entry.metadata().ok()?;
-                let file_size = metadata.len();
+            // Walk recursively, skip unreadable files
+            let entries: Vec<_> = WalkDir::new(&root)
+                .into_iter()
+                .filter_map(|e| e.ok())
+                .filter(|e| e.file_type().is_file())
+                .collect();
 
-                let modification_date = metadata
-                    .modified()
-                    .ok()
-                    .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
-                    .and_then(|d| {
-                        let timestamp = d.as_secs() as i64;
-                        DateTime::<Utc>::from_timestamp(timestamp, 0)
-                    })
-                    .map(|dt| dt.to_rfc3339())
-                    .unwrap_or_else(|| "Unknown".to_string());
+            // Parallel processing with Rayon
+            let map: HashMap<_, _> = entries
+                .par_iter()
+                .filter_map(|entry| {
+                    let path = entry.path();
+                    let name = path.file_name()?.to_str()?.to_string();
+                    let metadata = entry.metadata().ok()?;
+                    let file_size = metadata.len();
 
-                let lower_name = name.to_lowercase();
-                let hash = blake3::hash(lower_name.as_bytes()).to_hex().to_string();
+                    let modification_date = metadata
+                        .modified()
+                        .ok()
+                        .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+                        .and_then(|d| {
+                            let timestamp = d.as_secs() as i64;
+                            DateTime::<Utc>::from_timestamp(timestamp, 0)
+                        })
+                        .map(|dt| dt.to_rfc3339())
+                        .unwrap_or_else(|| "Unknown".to_string());
 
-                Some((
-                    hash,
-                    Arc::new(FileInfo {
-                        file_name: name,
-                        file_size,
-                        modification_date,
-                        formatted_size: FileInfo::format_size(file_size),
-                        file_path: path.display().to_string(),
-                        lower_name,
-                    }),
-                ))
-            })
-            .collect();
+                    let lower_name = name.to_lowercase();
+                    let hash = blake3::hash(lower_name.as_bytes()).to_hex().to_string();
 
-        Ok::<_, String>(map)
+                    Some((
+                        hash,
+                        Arc::new(FileInfo {
+                            file_name: name,
+                            file_size,
+                            modification_date,
+                            formatted_size: FileInfo::format_size(file_size),
+                            file_path: path.display().to_string(),
+                            lower_name,
+                        }),
+                    ))
+                })
+                .collect();
+
+            combined_map.extend(map);
+        }
+
+        Ok::<_, String>(combined_map)
     })
     .await
     .map_err(|e| e.to_string())??;
