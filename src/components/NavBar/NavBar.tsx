@@ -5,7 +5,7 @@ const Navbar = () => {
   return (
     <div className={styles.container}>
       <div className={styles.title}>
-        <h4>File Explorer</h4>
+        <h4>RustyFiles</h4>
       </div>
       <ViewModeDropdown />
     </div>

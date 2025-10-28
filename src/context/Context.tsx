@@ -8,6 +8,7 @@ import {
   ChangeEvent,
   useMemo,
   useCallback,
+  useRef,
 } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { debounce } from "lodash";
@@ -170,33 +171,30 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const debouncedSearch = useMemo(
-    () => debounce((q: string) => performSearch(q), 300),
-    [performSearch]
+  const debouncedSearchRef = useRef(
+    debounce((q: string) => performSearch(q), 300)
   );
 
-  const handleSearch = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value;
-      setSearchValue(value);
+  // ✅ Clean up debounce only when component unmounts
+  useEffect(() => {
+    return () => {
+      debouncedSearchRef.current.cancel();
+    };
+  }, []);
 
-      if (value.trim() === "") {
-        setSearchResults([]);
-        setIsSearching(false);
-        debouncedSearch.cancel();
-        return;
-      }
+  const handleSearch = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchValue(value);
 
-      debouncedSearch(value);
-    },
-    [debouncedSearch]
-  );
+    if (value.trim() === "") {
+      setSearchResults([]);
+      setIsSearching(false);
+      debouncedSearchRef.current.cancel();
+      return;
+    }
 
-  // useEffect(() => {
-  //   return () => {
-  //     debouncedSearch.cancel();
-  //   };
-  // }, [debouncedSearch]);
+    debouncedSearchRef.current(value);
+  }, []);
 
   // -------------------- Directory Management --------------------
 
