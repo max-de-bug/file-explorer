@@ -21,6 +21,7 @@ interface FileInfo {
   file_size: number;
   modification_date: string;
   formatted_size: string;
+  file_type: string; // "file", "directory", "symlink", or "unknown"
   image?: string;
 }
 

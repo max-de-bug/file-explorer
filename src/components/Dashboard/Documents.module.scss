@@ -1,48 +1,241 @@
+@import "../../styles/mixins";
+
 .container {
-  padding: 20px;
+  @include container;
 }
 
 .header {
-  font-size: 2rem;
-  margin-bottom: 10px;
-  color: #f5f5f5;
+  @include header;
 }
 
-.list {
-  list-style-type: none;
-  padding: 0;
+.title {
+  @include title;
 }
 
-.listItem {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  align-items: center;
-  margin-bottom: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+.titleIcon {
+  @include titleIcon(#6366f1);
+}
 
-  &:hover {
-    background-color: #2a2a3e;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    transform: translateY(-1px);
-  }
+.count {
+  @include count;
+}
+
+.tableWrapper {
+  @include tableWrapper;
+}
+
+.table {
+  @include table;
+}
+
+thead {
+  @include tableHeader;
+}
+
+th {
+  @include tableHeaderCell;
+}
+
+.colName {
+  width: 40%;
+  min-width: 200px;
+}
+
+.colType {
+  width: 15%;
+  min-width: 100px;
+}
+
+.colModified {
+  width: 25%;
+  min-width: 180px;
+}
+
+.colSize {
+  width: 20%;
+  min-width: 120px;
+  text-align: right;
+}
+
+.row {
+  @include tableRow;
+}
+
+td {
+  @include tableCell;
+}
+
+.cellName {
+  width: 40%;
+}
+
+.nameContent {
+  @include nameContent;
+}
+
+.fileIcon {
+  @include fileIcon;
+}
+
+.folderIcon {
+  @include folderIcon;
+}
+
+.fileIconSvg {
+  @include fileIconSvg;
 }
 
 .fileName {
-  font-weight: bold;
-  color: #f5f5f5;
+  @include fileName;
 }
 
-.fileDate,
-.fileSize {
-  font-size: 0.9rem;
-  color: #b8b8b8;
+.cellType {
+  width: 15%;
 }
 
-.fileDate {
-  text-align: center;
+.typeBadge {
+  @include typeBadge;
+
+  &.type-directory {
+    @include typeBadgeDirectory;
+  }
+
+  &.type-file {
+    @include typeBadgeFile;
+  }
+
+  &.type-symlink {
+    @include typeBadgeSymlink;
+  }
+
+  &.type-unknown {
+    @include typeBadgeUnknown;
+  }
 }
 
-.fileSize {
+.cellModified {
+  width: 25%;
+}
+
+.dateContent {
+  @include contentWrapper;
+}
+
+.dateIcon {
+  @include contentIcon;
+}
+
+.cellSize {
+  width: 20%;
   text-align: right;
+}
+
+.sizeContent {
+  @include contentWrapper;
+  justify-content: flex-end;
+}
+
+.sizeIcon {
+  @include contentIcon;
+}
+
+.emptyState {
+  @include emptyState;
+}
+
+.emptyIcon {
+  @include emptyIcon;
+}
+
+.emptyTitle {
+  @include emptyTitle;
+}
+
+.emptyText {
+  @include emptyText;
+}
+
+// Responsive design
+@media (max-width: 1024px) {
+  .colModified {
+    display: none;
+  }
+
+  .cellModified {
+    display: none;
+  }
+
+  .colName {
+    width: 50%;
+  }
+
+  .colType {
+    width: 20%;
+  }
+
+  .colSize {
+    width: 30%;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: $spacing-md $spacing-lg;
+  }
+
+  .title {
+    font-size: 1.25rem;
+  }
+
+  .tableWrapper {
+    padding: $spacing-sm $spacing-md;
+  }
+
+  .colType {
+    display: none;
+  }
+
+  .cellType {
+    display: none;
+  }
+
+  .colName {
+    width: 60%;
+  }
+
+  .colSize {
+    width: 40%;
+  }
+
+  th,
+  td {
+    padding: $spacing-sm $spacing-xs;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $spacing-sm;
+  }
+
+  .count {
+    align-self: flex-end;
+  }
+
+  .nameContent {
+    gap: $spacing-xs;
+  }
+
+  .fileIcon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .folderIcon,
+  .fileIconSvg {
+    width: 16px;
+    height: 16px;
+  }
 }

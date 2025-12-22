@@ -1,72 +1,295 @@
-// DiskList.module.scss
+@import "../../styles/mixins";
+
 .container {
-  padding: 20px;
+  @include container;
+}
 
-  .buttongroup {
-    margin-bottom: 20px;
-    display: flex;
-    gap: 10px;
-    justify-content: center;
+.header {
+  @include header;
+}
+
+.title {
+  @include title;
+}
+
+.titleIcon {
+  @include titleIcon(#8b5cf6);
+}
+
+.count {
+  @include count;
+}
+
+.tableWrapper {
+  @include tableWrapper;
+}
+
+.table {
+  @include table;
+}
+
+thead {
+  @include tableHeader;
+}
+
+th {
+  @include tableHeaderCell;
+}
+
+.colName {
+  width: 20%;
+  min-width: 150px;
+}
+
+.colType {
+  width: 12%;
+  min-width: 80px;
+}
+
+.colTotal {
+  width: 15%;
+  min-width: 120px;
+}
+
+.colUsed {
+  width: 15%;
+  min-width: 120px;
+}
+
+.colAvailable {
+  width: 15%;
+  min-width: 120px;
+}
+
+.colUsage {
+  width: 23%;
+  min-width: 150px;
+}
+
+.row {
+  @include tableRow;
+}
+
+td {
+  @include tableCell;
+}
+
+.cellName {
+  width: 20%;
+}
+
+.nameContent {
+  @include nameContent;
+}
+
+.diskIcon {
+  @include diskIcon;
+}
+
+.iconSvg {
+  color: #8b5cf6;
+}
+
+.diskName {
+  @include fileName;
+}
+
+.cellType {
+  width: 12%;
+}
+
+.typeBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem $spacing-sm;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-transform: capitalize;
+  white-space: nowrap;
+  background: rgba(139, 92, 246, 0.15);
+  color: #a78bfa;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.cellTotal,
+.cellUsed,
+.cellAvailable {
+  width: 15%;
+}
+
+.sizeContent {
+  @include contentWrapper;
+}
+
+.sizeIcon {
+  @include contentIcon;
+}
+
+.cellUsage {
+  width: 23%;
+}
+
+.usageContent {
+  @include usageContent;
+}
+
+.usageBar {
+  @include usageBar;
+}
+
+.usageFill {
+  @include usageFill;
+}
+
+.usagePercentage {
+  @include usagePercentage;
+}
+
+.emptyState {
+  @include emptyState;
+}
+
+.emptyIcon {
+  @include emptyIcon;
+}
+
+.emptyTitle {
+  @include emptyTitle;
+}
+
+.emptyText {
+  @include emptyText;
+}
+
+// Responsive design
+@media (max-width: 1200px) {
+  .colAvailable {
+    display: none;
+  }
+
+  .cellAvailable {
+    display: none;
+  }
+
+  .colName {
+    width: 25%;
+  }
+
+  .colType {
+    width: 15%;
+  }
+
+  .colTotal {
+    width: 18%;
+  }
+
+  .colUsed {
+    width: 18%;
+  }
+
+  .colUsage {
+    width: 24%;
+  }
+}
+
+@media (max-width: 1024px) {
+  .colType {
+    display: none;
+  }
+
+  .cellType {
+    display: none;
+  }
+
+  .colName {
+    width: 30%;
+  }
+
+  .colTotal {
+    width: 20%;
+  }
+
+  .colUsed {
+    width: 20%;
+  }
+
+  .colUsage {
+    width: 30%;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: $spacing-md $spacing-lg;
+  }
+
+  .title {
+    font-size: 1.25rem;
+  }
+
+  .tableWrapper {
+    padding: $spacing-sm $spacing-md;
+  }
+
+  .colTotal {
+    display: none;
+  }
+
+  .cellTotal {
+    display: none;
+  }
+
+  .colName {
+    width: 35%;
+  }
+
+  .colUsed {
+    width: 25%;
+  }
+
+  .colUsage {
+    width: 40%;
+  }
+
+  th,
+  td {
+    padding: $spacing-sm $spacing-xs;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $spacing-sm;
+  }
+
+  .count {
+    align-self: flex-end;
+  }
+
+  .nameContent {
+    gap: $spacing-xs;
+  }
+
+  .diskIcon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .iconSvg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .usageContent {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $spacing-xs;
+  }
+
+  .usageBar {
     width: 100%;
-
-    button {
-      padding: 10px 15px;
-      margin-right: 10px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-
-      &.download {
-        background-color: #4caf50;
-        color: white;
-
-        &:hover {
-          background-color: #45a049;
-        }
-      }
-
-      &.picture {
-        background-color: #2196f3;
-        color: white;
-
-        &:hover {
-          background-color: #1976d2;
-        }
-      }
-
-      &.other {
-        background-color: #ff5722;
-        color: white;
-
-        &:hover {
-          background-color: #e64a19;
-        }
-      }
-    }
-  }
-
-  h2 {
-    margin-bottom: 10px;
-    font-size: 24px;
-    color: #333;
-  }
-
-  ul {
-    list-style: none;
-    padding: 0;
-
-    li {
-      padding: 8px 0;
-      border-bottom: 1px solid #ccc;
-
-      &:last-child {
-        border-bottom: none;
-      }
-    }
-  }
-
-  p {
-    color: #888;
   }
 }

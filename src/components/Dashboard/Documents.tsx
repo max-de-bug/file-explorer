@@ -1,32 +1,89 @@
 import { useContext } from "react";
 import { AppContext } from "../../context/Context";
-import styles from "./Documents.module.scss"; // Assuming you have a SCSS file for styling
+import { Folder, File, FileText, Calendar, HardDrive } from "lucide-react";
+import { formatDate, getFileTypeLabel } from "../../utils/fileUtils";
+import styles from "./Documents.module.scss";
 
 const Documents = () => {
-  const { documents } = useContext(AppContext); // Access context data
+  const { documents } = useContext(AppContext);
 
   return (
-    <>
-      <div className={styles.container}>
-        {documents?.length ? (
-          <ul className={styles.list}>
-            {documents.map((file, index) => (
-              <li key={index} className={styles.listItem}>
-                <span className={styles.fileName}>{file.file_name}</span>
-                <span className={styles.fileDate}>
-                  Modified: {file.modification_date}
-                </span>
-                <span className={styles.fileSize}>
-                  Size: {file.formatted_size}
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>No documents available.</p>
+    <div className={styles.container}>
+      <div className={styles.header}>
+        <h2 className={styles.title}>
+          <FileText size={24} className={styles.titleIcon} />
+          Documents
+        </h2>
+        {documents?.length > 0 && (
+          <span className={styles.count}>{documents.length} items</span>
         )}
       </div>
-    </>
+
+      {documents?.length ? (
+        <div className={styles.tableWrapper}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th className={styles.colName}>Name</th>
+                <th className={styles.colType}>Type</th>
+                <th className={styles.colModified}>Modified</th>
+                <th className={styles.colSize}>Size</th>
+              </tr>
+            </thead>
+            <tbody>
+              {documents.map((file, index) => (
+                <tr key={`${file.file_name}-${index}`} className={styles.row}>
+                  <td className={styles.cellName}>
+                    <div className={styles.nameContent}>
+                      <span className={styles.fileIcon}>
+                        {file.file_type === "directory" ? (
+                          <Folder size={20} className={styles.folderIcon} />
+                        ) : (
+                          <File size={20} className={styles.fileIconSvg} />
+                        )}
+                      </span>
+                      <span className={styles.fileName} title={file.file_name}>
+                        {file.file_name}
+                      </span>
+                    </div>
+                  </td>
+                  <td className={styles.cellType}>
+                    <span
+                      className={`${styles.typeBadge} ${
+                        styles[`type-${file.file_type || "unknown"}`]
+                      }`}
+                      data-type={file.file_type || "unknown"}
+                    >
+                      {getFileTypeLabel(file.file_type || "unknown")}
+                    </span>
+                  </td>
+                  <td className={styles.cellModified}>
+                    <div className={styles.dateContent}>
+                      <Calendar size={14} className={styles.dateIcon} />
+                      <span>{formatDate(file.modification_date)}</span>
+                    </div>
+                  </td>
+                  <td className={styles.cellSize}>
+                    <div className={styles.sizeContent}>
+                      <HardDrive size={14} className={styles.sizeIcon} />
+                      <span>{file.formatted_size || "—"}</span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className={styles.emptyState}>
+          <Folder size={48} className={styles.emptyIcon} />
+          <h3 className={styles.emptyTitle}>No documents found</h3>
+          <p className={styles.emptyText}>
+            Your documents folder is empty or could not be accessed.
+          </p>
+        </div>
+      )}
+    </div>
   );
 };
 
