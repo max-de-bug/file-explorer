@@ -21,6 +21,7 @@ interface FileInfo {
   file_size: number;
   modification_date: string;
   formatted_size: string;
+  file_path: string;
   file_type: string; // "file", "directory", "symlink", or "unknown"
   image?: string;
 }
@@ -54,8 +55,10 @@ interface AppContextType {
   searchValue: string;
   setSearchValue: (value: string | ((prev: string) => string)) => void;
   handleSearch: (e: ChangeEvent<HTMLInputElement>) => void;
+  clearSearch: () => void;
   searchResults: FileInfo[];
   isSearching: boolean;
+  searchError: string | null;
   setViewMode: (mode: ViewMode) => void;
 }
 
@@ -122,8 +125,10 @@ export const AppContext = createContext<AppContextType>({
   searchValue: "",
   setSearchValue: () => {},
   handleSearch: () => {},
+  clearSearch: () => {},
   searchResults: [],
   isSearching: false,
+  searchError: null,
 });
 
 // -------------------- Provider --------------------
@@ -135,6 +140,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [searchValue, setSearchValue] = useState<string>("");
   const [searchResults, setSearchResults] = useState<FileInfo[]>([]);
   const [isSearching, setIsSearching] = useState<boolean>(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const searchAbortControllerRef = useRef<AbortController | null>(null);
   const navigate = useNavigate();
 
   // -------------------- Helpers --------------------
@@ -157,18 +164,41 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (query.trim() === "") {
       setSearchResults([]);
       setIsSearching(false);
+      setSearchError(null);
       return;
     }
 
+    // Cancel previous search if it exists
+    if (searchAbortControllerRef.current) {
+      searchAbortControllerRef.current.abort();
+    }
+
+    // Create new AbortController for this search
+    const abortController = new AbortController();
+    searchAbortControllerRef.current = abortController;
+
     setIsSearching(true);
+    setSearchError(null);
+
     try {
       const results: FileInfo[] = await invoke("search_files", { query });
-      setSearchResults(results);
-    } catch (error) {
-      console.error("Error searching files:", error);
-      setSearchResults([]);
+      
+      // Only update if this request wasn't aborted
+      if (!abortController.signal.aborted) {
+        setSearchResults(results);
+        setSearchError(null);
+      }
+    } catch (error: any) {
+      // Don't set error if request was aborted (user typed new query)
+      if (!abortController.signal.aborted) {
+        console.error("Error searching files:", error);
+        setSearchError(error?.message || "Failed to search files");
+        setSearchResults([]);
+      }
     } finally {
-      setIsSearching(false);
+      if (!abortController.signal.aborted) {
+        setIsSearching(false);
+      }
     }
   }, []);
 
@@ -176,10 +206,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     debounce((q: string) => performSearch(q), 300)
   );
 
-  // ✅ Clean up debounce only when component unmounts
+  // ✅ Clean up debounce and abort controller on unmount
   useEffect(() => {
     return () => {
       debouncedSearchRef.current.cancel();
+      if (searchAbortControllerRef.current) {
+        searchAbortControllerRef.current.abort();
+      }
     };
   }, []);
 
@@ -190,11 +223,27 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (value.trim() === "") {
       setSearchResults([]);
       setIsSearching(false);
+      setSearchError(null);
       debouncedSearchRef.current.cancel();
+      // Cancel any pending search
+      if (searchAbortControllerRef.current) {
+        searchAbortControllerRef.current.abort();
+      }
       return;
     }
 
     debouncedSearchRef.current(value);
+  }, []);
+
+  const clearSearch = useCallback(() => {
+    setSearchValue("");
+    setSearchResults([]);
+    setIsSearching(false);
+    setSearchError(null);
+    debouncedSearchRef.current.cancel();
+    if (searchAbortControllerRef.current) {
+      searchAbortControllerRef.current.abort();
+    }
   }, []);
 
   // -------------------- Directory Management --------------------
@@ -313,8 +362,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setViewMode,
       searchValue,
       handleSearch,
+      clearSearch,
       searchResults,
       isSearching,
+      searchError,
     }),
     [
       state.disks,
@@ -326,6 +377,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       searchValue,
       searchResults,
       isSearching,
+      searchError,
       fetchDisks,
       fetchDownloads,
       fetchDocuments,
@@ -334,6 +386,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       handleHome,
       handleCurrentDirectory,
       handleSearch,
+      clearSearch,
     ]
   );
 
