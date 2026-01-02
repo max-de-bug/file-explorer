@@ -11,7 +11,7 @@ const Pictures = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <h2 className={styles.title}>
-          <Image size={24} className={styles.titleIcon} />
+          <Image size={20} className={styles.titleIcon} />
           Pictures
         </h2>
         {pictures?.length > 0 && (
@@ -64,16 +64,10 @@ const Pictures = () => {
                     </span>
                   </td>
                   <td className={styles.cellModified}>
-                    <div className={styles.dateContent}>
-                      <Calendar size={14} className={styles.dateIcon} />
-                      <span>{formatDate(picture.modification_date)}</span>
-                    </div>
+                    <span>{formatDate(picture.modification_date)}</span>
                   </td>
                   <td className={styles.cellSize}>
-                    <div className={styles.sizeContent}>
-                      <HardDrive size={14} className={styles.sizeIcon} />
-                      <span>{picture.formatted_size || "—"}</span>
-                    </div>
+                    <span>{picture.formatted_size || "—"}</span>
                   </td>
                 </tr>
               ))}

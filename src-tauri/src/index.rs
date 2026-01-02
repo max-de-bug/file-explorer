@@ -93,16 +93,16 @@ pub async fn search_files(query: String) -> Result<Vec<FileInfo>, String> {
     let results = tokio::task::spawn_blocking(move || {
         let query_hash = blake3::hash(query_lower.as_bytes()).to_hex().to_string();
 
-        // Exact hash match
+        // Exact hash match (only works for exact filename matches)
         if let Some(file) = index_snapshot.get(&query_hash) {
-            return vec![(*file).as_ref().clone()]; // deref Arc, clone FileInfo
+            return vec![(*file).as_ref().clone()];
         }
 
-        // Substring search fallback
+        // Substring search fallback - search in lowercase file names
         index_snapshot
             .values()
             .filter(|file| file.lower_name.contains(&query_lower))
-            .map(|file| (*file).as_ref().clone()) // deref Arc, clone
+            .map(|file| (*file).as_ref().clone())
             .collect::<Vec<_>>()
     })
     .await

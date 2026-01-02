@@ -11,7 +11,7 @@ const Documents = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <h2 className={styles.title}>
-          <FileText size={24} className={styles.titleIcon} />
+          <FileText size={20} className={styles.titleIcon} />
           Documents
         </h2>
         {documents?.length > 0 && (
@@ -58,16 +58,10 @@ const Documents = () => {
                     </span>
                   </td>
                   <td className={styles.cellModified}>
-                    <div className={styles.dateContent}>
-                      <Calendar size={14} className={styles.dateIcon} />
-                      <span>{formatDate(file.modification_date)}</span>
-                    </div>
+                    <span>{formatDate(file.modification_date)}</span>
                   </td>
                   <td className={styles.cellSize}>
-                    <div className={styles.sizeContent}>
-                      <HardDrive size={14} className={styles.sizeIcon} />
-                      <span>{file.formatted_size || "—"}</span>
-                    </div>
+                    <span>{file.formatted_size || "—"}</span>
                   </td>
                 </tr>
               ))}

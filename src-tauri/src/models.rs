@@ -97,8 +97,48 @@ impl DiskInfo {
         let available = disk.available_space();
         let used = total - available;
 
+        // Get disk name - always use English format from mount point on Windows
+        let name = {
+            let mount_point = disk.mount_point().to_string_lossy().to_string();
+            
+            if !mount_point.is_empty() {
+                // Extract drive letter from mount point on Windows
+                // Mount points on Windows are typically "C:\", "D:\", etc.
+                let cleaned = mount_point.trim_end_matches('\\').trim_end_matches('/');
+                
+                // Check if it's a Windows drive letter format (C:, D:, etc.)
+                if cleaned.len() >= 2 {
+                    let first_char = cleaned.chars().next().unwrap();
+                    let second_char = cleaned.chars().nth(1);
+                    
+                    // Pattern: Single letter followed by colon (C:, D:, etc.)
+                    if first_char.is_alphabetic() && second_char == Some(':') {
+                        let drive_letter = cleaned.chars().take(2).collect::<String>();
+                        format!("Local Disk ({})", drive_letter)
+                    } else {
+                        // Not a standard drive letter, use cleaned mount point
+                        cleaned.to_string()
+                    }
+                } else if cleaned.len() == 1 && cleaned.chars().next().unwrap().is_alphabetic() {
+                    // Single letter, add colon
+                    format!("Local Disk ({}:)", cleaned)
+                } else {
+                    // Fallback: use mount point as-is
+                    mount_point
+                }
+            } else {
+                // Fallback: try disk name, or generate from disk kind
+                let disk_name = disk.name().to_string_lossy().to_string();
+                if !disk_name.is_empty() {
+                    disk_name
+                } else {
+                    format!("Disk ({:?})", disk.kind())
+                }
+            }
+        };
+
         Self {
-            name: disk.name().to_string_lossy().to_string(),
+            name,
             kind: format!("{:?}", disk.kind()),
             total_space: total,
             available_space: available,

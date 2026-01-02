@@ -11,7 +11,7 @@ const DiskList = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <h2 className={styles.title}>
-          <HardDrive size={24} className={styles.titleIcon} />
+          <HardDrive size={20} className={styles.titleIcon} />
           Disks
         </h2>
         {disks?.length > 0 && (

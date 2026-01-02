@@ -192,7 +192,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       // Don't set error if request was aborted (user typed new query)
       if (!abortController.signal.aborted) {
         console.error("Error searching files:", error);
-        setSearchError(error?.message || "Failed to search files");
+        const errorMessage = error?.message || "Failed to search files";
+        setSearchError(errorMessage);
         setSearchResults([]);
       }
     } finally {
@@ -206,7 +207,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     debounce((q: string) => performSearch(q), 300)
   );
 
-  // ✅ Clean up debounce and abort controller on unmount
   useEffect(() => {
     return () => {
       debouncedSearchRef.current.cancel();
@@ -225,7 +225,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setIsSearching(false);
       setSearchError(null);
       debouncedSearchRef.current.cancel();
-      // Cancel any pending search
       if (searchAbortControllerRef.current) {
         searchAbortControllerRef.current.abort();
       }

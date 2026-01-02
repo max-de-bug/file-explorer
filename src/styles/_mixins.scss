@@ -75,7 +75,7 @@ $spacing-xl: 2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: $spacing-lg $spacing-xl;
+  padding: $spacing-md $spacing-xl;
   border-bottom: 1px solid $border-primary;
   background: $bg-secondary;
   flex-shrink: 0;
@@ -97,7 +97,9 @@ $spacing-xl: 2rem;
 @mixin titleIcon($color) {
   color: $color;
   flex-shrink: 0;
-  filter: drop-shadow(0 2px 4px rgba($color, 0.3));
+  width: 20px;
+  height: 20px;
+  filter: drop-shadow(0 1px 2px rgba($color, 0.2));
 }
 
 // Count badge
@@ -114,24 +116,26 @@ $spacing-xl: 2rem;
 @mixin tableWrapper {
   flex: 1;
   overflow: auto;
-  padding: $spacing-md $spacing-xl;
+  padding: 0;
+  position: relative;
+  background: $bg-primary;
 
   &::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 12px;
+    height: 12px;
   }
 
   &::-webkit-scrollbar-track {
-    background: $bg-secondary;
-    border-radius: 4px;
+    background: $bg-primary;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: $border-secondary;
-    border-radius: 4px;
+    background: $border-primary;
+    border-radius: 6px;
+    border: 2px solid $bg-primary;
 
     &:hover {
-      background: #4a4a6a;
+      background: $border-secondary;
     }
   }
 }
@@ -141,59 +145,51 @@ $spacing-xl: 2rem;
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   table-layout: fixed;
+  background: $bg-primary;
 }
 
 // Table header (thead)
 @mixin tableHeader {
   position: sticky;
   top: 0;
-  background: linear-gradient(180deg, $bg-tertiary 0%, $bg-secondary 100%);
-  z-index: 100;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
+  background: $bg-secondary;
+  z-index: 10;
   border-bottom: 1px solid $border-primary;
 }
 
 // Table header cell (th)
 @mixin tableHeaderCell {
   text-align: left;
-  padding: $spacing-md $spacing-md;
-  font-weight: 700;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  padding: 0.625rem $spacing-md;
+  font-weight: 500;
+  font-size: 0.8125rem;
+  text-transform: none;
+  letter-spacing: 0;
   color: $text-secondary;
-  border-bottom: 2px solid $border-secondary;
   white-space: nowrap;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.02) 0%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  transition: color 0.2s ease;
+  background: $bg-secondary;
+  border-bottom: none;
+  user-select: none;
+  cursor: default;
 
   &:first-child {
-    padding-left: 0;
+    padding-left: $spacing-lg;
   }
 
   &:last-child {
-    padding-right: 0;
-  }
-
-  &:hover {
-    color: $text-primary;
+    padding-right: $spacing-lg;
   }
 }
 
 // Table row
 @mixin tableRow {
-  transition: background-color 0.15s ease, transform 0.1s ease;
-  border-bottom: 1px solid $border-primary;
+  transition: background-color 0.1s ease;
+  border-bottom: none;
 
   &:hover {
     background-color: $bg-hover;
-    transform: translateX(2px);
   }
 
   &:last-child {
@@ -203,15 +199,16 @@ $spacing-xl: 2rem;
 
 // Table cell (td)
 @mixin tableCell {
-  padding: $spacing-md;
+  padding: 0.5rem $spacing-md;
   vertical-align: middle;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
 
   &:first-child {
-    padding-left: 0;
+    padding-left: $spacing-lg;
   }
 
   &:last-child {
-    padding-right: 0;
+    padding-right: $spacing-lg;
   }
 }
 
@@ -221,19 +218,12 @@ $spacing-xl: 2rem;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, $bg-icon 0%, $bg-icon-dark 100%);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-
-  &:hover {
-    background: linear-gradient(135deg, $bg-icon-hover 0%, $bg-hover 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  }
+  width: 20px;
+  height: 20px;
+  margin-right: $spacing-sm;
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 // Folder icon
@@ -250,13 +240,14 @@ $spacing-xl: 2rem;
 
 // File name
 @mixin fileName {
-  font-weight: 500;
+  font-weight: 400;
   color: $text-primary;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
   min-width: 0;
+  font-size: 0.875rem;
 }
 
 // Name content wrapper
@@ -270,66 +261,32 @@ $spacing-xl: 2rem;
 @mixin typeBadge {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 0.5rem 0.875rem;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  text-transform: capitalize;
+  letter-spacing: 0;
   white-space: nowrap;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-
-  &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.25);
-  }
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  color: $text-tertiary;
 }
 
-// Type badge variants
+// Type badge variants - no backgrounds, just text colors
 @mixin typeBadgeDirectory {
-  background: linear-gradient(
-    135deg,
-    $badge-directory-bg 0%,
-    $badge-directory-bg-light 100%
-  );
   color: $badge-directory-color;
-  border: 1px solid $badge-directory-border;
-  box-shadow: 0 2px 4px $badge-directory-shadow;
 }
 
 @mixin typeBadgeFile {
-  background: linear-gradient(
-    135deg,
-    $badge-file-bg 0%,
-    $badge-file-bg-light 100%
-  );
   color: $badge-file-color;
-  border: 1px solid $badge-file-border;
-  box-shadow: 0 2px 4px $badge-file-shadow;
 }
 
 @mixin typeBadgeSymlink {
-  background: linear-gradient(
-    135deg,
-    $badge-symlink-bg 0%,
-    $badge-symlink-bg-light 100%
-  );
   color: $badge-symlink-color;
-  border: 1px solid $badge-symlink-border;
-  box-shadow: 0 2px 4px $badge-symlink-shadow;
 }
 
 @mixin typeBadgeUnknown {
-  background: linear-gradient(
-    135deg,
-    $badge-unknown-bg 0%,
-    $badge-unknown-bg-light 100%
-  );
   color: $badge-unknown-color;
-  border: 1px solid $badge-unknown-border;
-  box-shadow: 0 2px 4px $badge-unknown-shadow;
 }
 
 // Date/Size content wrapper
@@ -338,7 +295,7 @@ $spacing-xl: 2rem;
   align-items: center;
   gap: $spacing-xs;
   color: $text-tertiary;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
 }
 
 // Date/Size icon
@@ -390,8 +347,8 @@ $spacing-xl: 2rem;
   flex-shrink: 0;
   width: 32px;
   height: 32px;
-  border-radius: 6px;
-  background: $bg-icon;
+  background: transparent;
+  border: none;
   transition: background-color 0.15s ease;
 }
 

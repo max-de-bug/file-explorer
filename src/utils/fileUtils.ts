@@ -55,7 +55,7 @@ export const calculateUsagePercentage = (
  */
 export const getUsageColor = (percentage: number): string => {
   if (percentage >= 90) return "#ef4444"; // Red
-  if (percentage >= 75) return "#f59e0b"; // Orange
-  if (percentage >= 50) return "#eab308"; // Yellow
+  if (percentage >= 75) return "#3b82f6"; // Blue
+  if (percentage >= 50) return "#60a5fa"; // Light Blue
   return "#10b981"; // Green
 };
